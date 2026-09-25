@@ -97,6 +97,7 @@ const PERCENT_KEYS = new Set(['percentComplete', 'totalAllocationPct', 'allocati
 export class DepartmentDashboardComponent implements OnInit {
   data: DashboardData | null = null;
   loading = true;
+  refreshing = false;
   error: string | null = null;
 
   // Simple Direct Pop-up Modal State
@@ -164,15 +165,17 @@ export class DepartmentDashboardComponent implements OnInit {
   refresh(): void {
     const id = this.route.snapshot.paramMap.get('departmentId');
     if (!id) return;
-    this.loading = true;
+    this.refreshing = true;
     this.api.getDashboard(id, true).subscribe({
       next: (data) => {
         this.normalizeDepartmentData(data);
         this.data = data;
+        this.refreshing = false;
         this.loading = false;
       },
       error: (err) => {
         this.error = err?.error?.error || 'Could not refresh this dashboard.';
+        this.refreshing = false;
         this.loading = false;
       },
     });

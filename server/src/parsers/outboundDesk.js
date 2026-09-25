@@ -9,11 +9,13 @@ const { findFile, loadWorkbook, sheetToObjects, cleanStr, toISODate } = require(
  * picked up automatically (any sheet other than Dashboard/Assumptions whose
  * header row contains "UID" and "Outcome").
  */
-function parseOutboundDesk() {
-  const file = findFile(['outbound']);
-  if (!file) return null;
-
-  const wb = loadWorkbook(file);
+function parseOutboundDesk(existingWb = null) {
+  let wb = existingWb;
+  if (!wb) {
+    const file = findFile(['outbound']);
+    if (!file) return null;
+    wb = loadWorkbook(file);
+  }
   const agentSheetNames = wb.SheetNames.filter((n) => !/^dashboard$|^assumptions$/i.test(n));
 
   const records = [];
@@ -109,7 +111,7 @@ function parseOutboundDesk() {
   return {
     department: 'outbound-desk',
     label: 'Outbound Desk',
-    sourceFile: file.split('/').pop(),
+    sourceFile: 'Outbound-desk-mis-dashboard.xlsx',
     generatedAt: new Date().toISOString(),
     kpis,
     charts,

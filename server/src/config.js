@@ -1,40 +1,31 @@
-const path = require('path');
-
-// Folder where the 4 department Excel files live. In production this should
-// point at the shared folder (a mapped network drive or mounted path on the
-// internal server), e.g. DATA_FOLDER=/mnt/shared/mis-dashboards
-const DATA_FOLDER = process.env.DATA_FOLDER
-  ? path.resolve(process.env.DATA_FOLDER)
-  : path.join(__dirname, '..', 'data');
-
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
-// Each department is matched against files in DATA_FOLDER by keyword (case
-// insensitive substring match against the filename) rather than an exact
-// name, so the app keeps working if the shared copy is renamed slightly
-// (e.g. "Marketing Lead Generation_Clientwise Dashboard.xlsx" vs
-// "Marketing_Lead_Generation_Clientwise_Dashboard.xlsx").
 const DEPARTMENTS = [
   {
     id: 'marketing',
     label: 'Marketing Lead Generation',
-    matchKeywords: ['marketing', 'lead generation'],
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQDime4OlOK9QKMr3DQA3vjgAXm2AuXdI9SyMGPUBodwdF0?e=SkLm1f',
   },
   {
     id: 'cre-utilization',
     label: 'MIS Client Utilization (CRE)',
-    matchKeywords: ['client_utilization', 'client utilization', 'utilization dashboard'],
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQCt9r0XN-0hSrwFMU-FLjBcAT4IYRE2yVROWBWFnii0dAM?e=wRNnTf',
   },
   {
     id: 'outbound-desk',
     label: 'Outbound Desk',
-    matchKeywords: ['outbound'],
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQCKqLzToLKZTpH2Onw1s45nAVgwY510UYS5LPKTaUsitVk?e=5Wyg44',
   },
   {
     id: 'sw-engineering',
     label: 'Software Engineering',
-    matchKeywords: ['swengg', 'sw engg', 'software'],
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQC_Xo4hK73wSpdebZ4kXvXEAVUnnIFSTHDRJ4fnv3CHivk?e=ijEWjP',
+  },
+  {
+    id: 'it-operations',
+    label: 'Weekly IT MIS & Operations',
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQBFZ0Gcr1oqQL59L9uoQHEpAebC8cRUGye9-iY_Azqck4E?e=hIgQME',
   },
 ];
 
-module.exports = { DATA_FOLDER, PORT, DEPARTMENTS };
+module.exports = { PORT, DEPARTMENTS };

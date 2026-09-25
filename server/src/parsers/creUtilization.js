@@ -10,11 +10,13 @@ const INTERNAL_CATEGORIES = new Set(['Sketching', 'Training', 'Other', 'Leave'])
 // dashboard's selected filters, e.g. SelClientHours/SelRank/EmpRank).
 const HELPER_COLUMNS = new Set(['Total', 'SelClientHours', 'SelRank', 'ClientTotal', 'EmpFirst', 'EmpRank']);
 
-function parseCreUtilization() {
-  const file = findFile(['client_utilization', 'client utilization', 'utilization dashboard']);
-  if (!file) return null;
-
-  const wb = loadWorkbook(file);
+function parseCreUtilization(existingWb = null) {
+  let wb = existingWb;
+  if (!wb) {
+    const file = findFile(['client_utilization', 'client utilization', 'utilization dashboard']);
+    if (!file) return null;
+    wb = loadWorkbook(file);
+  }
   const misSheet = wb.Sheets['MIS Data'];
   const utilSheet = wb.Sheets['Utilization Data'];
   if (!misSheet || !utilSheet) throw new Error('CRE workbook: expected "MIS Data" and "Utilization Data" sheets');
@@ -108,7 +110,7 @@ function parseCreUtilization() {
   return {
     department: 'cre-utilization',
     label: 'MIS Client Utilization (CRE)',
-    sourceFile: file.split('/').pop(),
+    sourceFile: 'MIS_Client_Utilization_Dashboard - CRE.xlsx',
     generatedAt: new Date().toISOString(),
     kpis,
     charts,

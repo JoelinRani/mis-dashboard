@@ -50,6 +50,18 @@
   font-weight: 500;
 }
 
+.source-link {
+  color: var(--accent);
+  text-decoration: underline;
+  margin: 0 4px;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.source-link:hover {
+  color: var(--accent-strong);
+}
+
 .btn-primary {
   font: inherit;
   font-size: 13px;

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { PORT, DATA_FOLDER } = require('./config');
+const { PORT } = require('./config');
 const apiRouter = require('./routes/api');
 
 const app = express();
@@ -10,7 +10,7 @@ app.use(cors());
 app.use('/api', apiRouter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', dataFolder: DATA_FOLDER });
+  res.json({ status: 'ok', source: 'OneDrive Cloud (In-Memory Stream)' });
 });
 
 // If the Angular app has been built (client/dist/client/browser), serve it
@@ -29,5 +29,5 @@ if (fs.existsSync(clientDist)) {
 
 app.listen(PORT, () => {
   console.log(`Park MIS Dashboard server listening on port ${PORT}`);
-  console.log(`Reading department workbooks from: ${DATA_FOLDER}`);
+  console.log('Reading department workbooks directly from OneDrive Cloud in-memory');
 });

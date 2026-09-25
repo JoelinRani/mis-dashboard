@@ -63,6 +63,7 @@ export interface DashboardData {
   department: string;
   label: string;
   sourceFile: string;
+  sourceUrl?: string;
   generatedAt: string;
   kpis: Kpi[];
   charts: ChartDef[];

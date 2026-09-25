@@ -10,11 +10,13 @@ const { findFile, loadWorkbook, sheetToObjects, sheetToGrid, toNumber, toPercent
  * Defect KPIs are hardcoded to row 5 only) - all KPIs below are recomputed
  * directly from the detail sheets instead of reusing those formulas.
  */
-function parseSwEngineering() {
-  const file = findFile(['swengg', 'sw engg', 'software']);
-  if (!file) return null;
-
-  const wb = loadWorkbook(file);
+function parseSwEngineering(existingWb = null) {
+  let wb = existingWb;
+  if (!wb) {
+    const file = findFile(['swengg', 'sw engg', 'software']);
+    if (!file) return null;
+    wb = loadWorkbook(file);
+  }
   const projectSheet = wb.Sheets['Project Status'];
   const resourceSheet = wb.Sheets['Resource Utilization'];
   const defectSheet = wb.Sheets['Defect Tracking'];
@@ -128,8 +130,44 @@ function parseSwEngineering() {
     return [...map.entries()];
   };
 
+  // --- Check if Dashboard sheet has chart source data ---
+  let dashboardDefectCounts = null;
+  const dashSheet = wb.Sheets['Dashboard'];
+  if (dashSheet) {
+    const dashGrid = sheetToGrid(dashSheet);
+    const chartSourceHeaderIdx = dashGrid.findIndex((row) => row.some((c) => String(c).includes('Chart Source Data') || String(c).includes('Defect Severity')));
+    if (chartSourceHeaderIdx >= 0) {
+      const counts = {};
+      for (let i = chartSourceHeaderIdx; i < Math.min(dashGrid.length, chartSourceHeaderIdx + 10); i++) {
+        const row = dashGrid[i] || [];
+        for (let j = 0; j < row.length - 1; j++) {
+          const cell = String(row[j] || '').trim();
+          if (['Critical', 'High', 'Medium', 'Low'].includes(cell)) {
+            const val = toNumber(row[j + 1], null);
+            if (val !== null) counts[cell] = val;
+          }
+        }
+      }
+      if (Object.keys(counts).length > 0) {
+        dashboardDefectCounts = counts;
+      }
+    }
+  }
+
+  const severities = ['Critical', 'High', 'Medium', 'Low'];
+  const openDefectsMap = new Map();
+  defects.filter((d) => d.status !== 'Closed').forEach((d) => {
+    openDefectsMap.set(d.severity, (openDefectsMap.get(d.severity) || 0) + 1);
+  });
+
+  const defectsBySeverityData = severities.map((s) => {
+    if (dashboardDefectCounts && dashboardDefectCounts[s] !== undefined && dashboardDefectCounts[s] > 0) {
+      return dashboardDefectCounts[s];
+    }
+    return openDefectsMap.get(s) || 0;
+  });
+
   const projectStatusDist = groupCount(projects, (p) => p.status);
-  const defectsBySeverity = groupCount(defects.filter((d) => d.status !== 'Closed'), (d) => d.severity);
   const slaBreakdown = groupCount(defects, (d) => d.slaStatus);
   const hoursByEmployee = [...employeeSummary]
     .sort((a, b) => (b.actualHours || 0) - (a.actualHours || 0))
@@ -138,7 +176,7 @@ function parseSwEngineering() {
 
   const charts = [
     { id: 'projectStatus', title: 'Project Status Distribution', type: 'pie', labels: projectStatusDist.map((x) => x[0]), series: [{ name: 'Projects', data: projectStatusDist.map((x) => x[1]) }] },
-    { id: 'defectsBySeverity', title: 'Open Defects by Severity', type: 'bar', labels: defectsBySeverity.map((x) => x[0]), series: [{ name: 'Defects', data: defectsBySeverity.map((x) => x[1]) }] },
+    { id: 'defectsBySeverity', title: 'Open Defects by Severity', type: 'bar', labels: severities, series: [{ name: 'Defects', data: defectsBySeverityData }] },
     { id: 'slaBreakdown', title: 'SLA Status Breakdown', type: 'pie', labels: slaBreakdown.map((x) => x[0]), series: [{ name: 'Defects', data: slaBreakdown.map((x) => x[1]) }] },
     { id: 'hoursByEmployee', title: 'Actual Hours by Employee', type: 'bar', labels: hoursByEmployee.map((x) => x[0]), series: [{ name: 'Hours', data: hoursByEmployee.map((x) => x[1]) }] },
   ];
@@ -146,7 +184,7 @@ function parseSwEngineering() {
   return {
     department: 'sw-engineering',
     label: 'Software Engineering',
-    sourceFile: file.split('/').pop(),
+    sourceFile: 'SWEngg_MIS_Report_Aug_Draft.xlsx',
     generatedAt: new Date().toISOString(),
     kpis,
     charts,

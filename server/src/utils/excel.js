@@ -22,6 +22,64 @@ function loadWorkbook(filePath) {
   return XLSX.readFile(filePath, { cellDates: true, cellNF: false, cellText: false });
 }
 
+const directUrlCache = new Map();
+
+/** Fetch and parse an Excel workbook directly from OneDrive over HTTPS into memory (no disk files). */
+async function fetchWorkbookFromOneDrive(url) {
+  const cachedInfo = directUrlCache.get(url);
+  if (cachedInfo) {
+    try {
+      const res = await fetch(cachedInfo.directUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          ...(cachedInfo.cookies ? { Cookie: cachedInfo.cookies } : {})
+        }
+      });
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        return XLSX.read(buffer, { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
+      }
+    } catch {
+      // Re-resolve redirects below if cached direct URL expired
+    }
+  }
+
+  let curr = url.includes('?') ? url + '&download=1' : url + '?download=1';
+  let cookies = '';
+  
+  for (let i = 0; i < 10; i++) {
+    const res = await fetch(curr, {
+      redirect: 'manual',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        ...(cookies ? { Cookie: cookies } : {})
+      }
+    });
+    
+    const setCookie = res.headers.get('set-cookie');
+    if (setCookie) cookies = setCookie;
+    
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location');
+      if (!loc) break;
+      curr = new URL(loc, curr).toString();
+      continue;
+    }
+    
+    if (!res.ok) {
+      throw new Error(`Failed to fetch OneDrive workbook (HTTP ${res.status}): ${res.statusText}`);
+    }
+    
+    directUrlCache.set(url, { directUrl: curr, cookies });
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return XLSX.read(buffer, { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
+  }
+  throw new Error('Failed to resolve OneDrive download redirect after 10 attempts');
+}
+
 /** Convert a sheet to an array-of-arrays (raw grid), trimming trailing empty rows. */
 function sheetToGrid(sheet) {
   const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true, blankrows: true });
@@ -89,9 +147,21 @@ function toISODate(v) {
   return isNaN(d) ? null : d.toISOString().slice(0, 10);
 }
 
+function getFileMtime(keywords) {
+  try {
+    const file = findFile(keywords);
+    if (!file || !fs.existsSync(file)) return 0;
+    return fs.statSync(file).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
 module.exports = {
   findFile,
+  getFileMtime,
   loadWorkbook,
+  fetchWorkbookFromOneDrive,
   sheetToGrid,
   sheetToObjects,
   toNumber,

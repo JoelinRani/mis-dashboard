@@ -12,16 +12,7 @@ export class ApiService {
   constructor(private http: HttpClient) { }
 
   getDepartments(): Observable<DepartmentSummary[]> {
-    return this.http.get<DepartmentSummary[]>(`${this.baseUrl}/departments`).pipe(
-      tap((depts) => {
-        // Pre-fetch all available departments into memory in background for instant switching
-        depts.forEach((d) => {
-          if (d.available && !this.dashboardCache.has(d.id)) {
-            this.getDashboard(d.id).subscribe();
-          }
-        });
-      })
-    );
+    return this.http.get<DepartmentSummary[]>(`${this.baseUrl}/departments`);
   }
 
   getCachedDashboard(departmentId: string): DashboardData | undefined {
@@ -29,9 +20,6 @@ export class ApiService {
   }
 
   getDashboard(departmentId: string, forceRefresh = false): Observable<DashboardData> {
-    if (!forceRefresh && this.dashboardCache.has(departmentId)) {
-      return of(this.dashboardCache.get(departmentId)!);
-    }
     const url = forceRefresh
       ? `${this.baseUrl}/departments/${departmentId}/dashboard?refresh=true`
       : `${this.baseUrl}/departments/${departmentId}/dashboard`;

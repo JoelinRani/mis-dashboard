@@ -1,8 +1,8 @@
-<ng-container *ngIf="loading">
+<ng-container *ngIf="loading && !data">
   <div class="state-msg">Loading dashboard…</div>
 </ng-container>
 
-<ng-container *ngIf="!loading && error">
+<ng-container *ngIf="!loading && error && !data">
   <div class="state-msg error">
     {{ error }}
     <div class="hint">Check that the file for this department is saved in the shared folder and try again.</div>
@@ -10,15 +10,18 @@
   </div>
 </ng-container>
 
-<ng-container *ngIf="!loading && !error && data">
+<ng-container *ngIf="data">
   <header class="page-header">
     <div>
       <h1>{{ data.label }}</h1>
       <div class="source-line">
-        Source: {{ data.sourceFile }} &middot; Updated {{ formattedGeneratedAt(data.generatedAt) }}
+        Source: <a [href]="data.sourceUrl || '#'" target="_blank" rel="noopener noreferrer" class="source-link">{{ data.sourceFile }}</a> &middot; Updated {{ formattedGeneratedAt(data.generatedAt) }}
       </div>
     </div>
-    <button class="btn-primary" (click)="refresh()">Refresh</button>
+    <button class="btn-primary" (click)="refresh()" [disabled]="refreshing">
+      <span *ngIf="refreshing">Refreshing…</span>
+      <span *ngIf="!refreshing">Refresh</span>
+    </button>
   </header>
 
   <!-- Interactive KPI Metric Cards -->

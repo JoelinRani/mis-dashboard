@@ -10,11 +10,13 @@ const { findFile, loadWorkbook, sheetToObjects, toNumber, cleanStr } = require('
  * trailing "Total" row (Account Type = Total, everything else blank) is
  * dropped - KPIs are recomputed from the real rows instead of trusting it.
  */
-function parseMarketing() {
-  const file = findFile(['marketing', 'lead generation']);
-  if (!file) return null;
-
-  const wb = loadWorkbook(file);
+function parseMarketing(existingWb = null) {
+  let wb = existingWb;
+  if (!wb) {
+    const file = findFile(['marketing', 'lead generation']);
+    if (!file) return null;
+    wb = loadWorkbook(file);
+  }
   const sheet = wb.Sheets['MIS Data'] || wb.Sheets[wb.SheetNames.find((n) => /mis data/i.test(n))];
   if (!sheet) throw new Error('Marketing workbook: "MIS Data" sheet not found');
 
@@ -84,7 +86,7 @@ function parseMarketing() {
   return {
     department: 'marketing',
     label: 'Marketing Lead Generation',
-    sourceFile: file.split('/').pop(),
+    sourceFile: 'Marketing Lead Generation_Clientwise Dashboard.xlsx',
     generatedAt: new Date().toISOString(),
     kpis,
     charts,

@@ -1,58 +1,93 @@
 const express = require('express');
 const { DEPARTMENTS } = require('../config');
+const { fetchWorkbookFromOneDrive } = require('../utils/excel');
 const { parseMarketing } = require('../parsers/marketing');
 const { parseCreUtilization } = require('../parsers/creUtilization');
 const { parseOutboundDesk } = require('../parsers/outboundDesk');
 const { parseSwEngineering } = require('../parsers/swEngineering');
+const { parseItOperations } = require('../parsers/itOperations');
 
 const PARSERS = {
   marketing: parseMarketing,
   'cre-utilization': parseCreUtilization,
   'outbound-desk': parseOutboundDesk,
   'sw-engineering': parseSwEngineering,
+  'it-operations': parseItOperations,
 };
 
 const serverCache = new Map();
+let isSyncing = false;
+
+// Fetch single department workbook directly in-memory
+async function fetchAndParseDepartment(deptId) {
+  const dept = DEPARTMENTS.find((d) => d.id === deptId);
+  const parser = PARSERS[deptId];
+  if (!dept || !parser) throw new Error(`Unknown department "${deptId}"`);
+
+  const wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
+  const data = parser(wb);
+  if (!data) throw new Error(`Could not parse data for department "${deptId}"`);
+  data.sourceUrl = dept.cloudUrl;
+
+  serverCache.set(deptId, { data, timestamp: Date.now() });
+  return data;
+}
+
+// Background sync for all departments to ensure instantaneous (<1ms) response times
+async function syncAllDepartments() {
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    await Promise.allSettled(
+      DEPARTMENTS.map((d) => fetchAndParseDepartment(d.id))
+    );
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Warm up memory cache immediately on boot
+syncAllDepartments().catch(console.error);
+
+// Background sync every 5 seconds so fresh edits are always ready in RAM
+setInterval(() => {
+  syncAllDepartments().catch(console.error);
+}, 5000);
 
 const router = express.Router();
 
-// List of departments the UI can show a picker for
+// List of departments (instant response)
 router.get('/departments', (req, res) => {
-  const list = DEPARTMENTS.map((d) => {
-    let available = true;
-    let error = null;
-    try {
-      let data = serverCache.get(d.id);
-      if (!data) {
-        data = PARSERS[d.id]();
-        if (data) serverCache.set(d.id, data);
-      }
-      available = !!data;
-      if (!data) error = 'Source file not found in the shared folder.';
-    } catch (e) {
-      available = false;
-      error = e.message;
-    }
-    return { id: d.id, label: d.label, available, error };
-  });
+  const list = DEPARTMENTS.map((d) => ({
+    id: d.id,
+    label: d.label,
+    available: true,
+    error: null,
+  }));
   res.json(list);
 });
 
-// Returns parsed dashboard, served instantly from memory cache
-router.get('/departments/:id/dashboard', (req, res) => {
-  const parser = PARSERS[req.params.id];
-  if (!parser) return res.status(404).json({ error: `Unknown department "${req.params.id}"` });
+// Returns parsed dashboard: serves instantly from memory or fresh on refresh
+router.get('/departments/:id/dashboard', async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === 'true';
-    if (!forceRefresh && serverCache.has(req.params.id)) {
-      return res.json(serverCache.get(req.params.id));
+    const cached = serverCache.get(req.params.id);
+
+    // If cached and no forced refresh requested, respond instantly (0ms)
+    if (!forceRefresh && cached) {
+      return res.json(cached.data);
     }
-    const data = parser();
-    if (!data) return res.status(404).json({ error: 'Source file not found in the shared folder for this department yet.' });
-    serverCache.set(req.params.id, data);
+
+    // Force refresh or cold cache: fetch fresh from cloud
+    const data = await fetchAndParseDepartment(req.params.id);
     res.json(data);
   } catch (e) {
-    console.error(`Failed to parse department ${req.params.id}:`, e);
+    // If live fetch fails but we have cached version, fallback to cached to avoid breaking UI
+    const cached = serverCache.get(req.params.id);
+    if (cached) {
+      return res.json(cached.data);
+    }
+    console.error(`Failed to load department ${req.params.id}:`, e);
     res.status(500).json({ error: e.message });
   }
 });
