@@ -1,0 +1,6 @@
+<div class="kpi-card" [class.clickable]="clickable" (click)="onClick()" [attr.role]="clickable ? 'button' : null"
+  [attr.tabindex]="clickable ? 0 : null" (keydown.enter)="onClick()" (keydown.space)="onClick()"
+  [title]="clickable ? 'Click to view ' + kpi.label + ' data' : ''">
+  <div class="kpi-label" [title]="kpi.label">{{ kpi.label }}</div>
+  <div class="kpi-value" [class.percent]="kpi.format === 'percent'">{{ formattedValue }}</div>
+</div>

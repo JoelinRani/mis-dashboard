@@ -1,0 +1,12 @@
+<div class="chart-card">
+  <div class="chart-header">
+    <div class="chart-title">{{ chart.title }}</div>
+    <button class="btn-chart-drill" (click)="onViewTable()" title="View data table for {{ chart.title }}">
+      <span>View Table</span>
+    </button>
+  </div>
+  <div class="chart-body">
+    <canvas #canvas *ngIf="!isEmpty"></canvas>
+    <div class="chart-empty" *ngIf="isEmpty">No data yet</div>
+  </div>
+</div>

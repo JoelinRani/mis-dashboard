@@ -1,0 +1,89 @@
+<ng-container *ngIf="loading">
+  <div class="state-msg">Loading dashboard…</div>
+</ng-container>
+
+<ng-container *ngIf="!loading && error">
+  <div class="state-msg error">
+    {{ error }}
+    <div class="hint">Check that the file for this department is saved in the shared folder and try again.</div>
+    <button class="btn-primary" (click)="refresh()">Retry</button>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!loading && !error && data">
+  <header class="page-header">
+    <div>
+      <h1>{{ data.label }}</h1>
+      <div class="source-line">
+        Source: {{ data.sourceFile }} &middot; Updated {{ formattedGeneratedAt(data.generatedAt) }}
+      </div>
+    </div>
+    <button class="btn-primary" (click)="refresh()">Refresh</button>
+  </header>
+
+  <!-- Interactive KPI Metric Cards -->
+  <section class="kpi-grid">
+    <app-kpi-card *ngFor="let k of data.kpis" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>
+  </section>
+
+  <!-- Interactive Charts Grid -->
+  <section class="chart-grid">
+    <app-chart-panel *ngFor="let c of data.charts" [chart]="c" (sliceClick)="onChartSliceClick($event)"
+      (chartClick)="onChartClick($event)"></app-chart-panel>
+  </section>
+
+
+
+
+
+  <!-- DIRECT POP-UP MODAL (Showing only that particular data) -->
+  <div class="modal-backdrop" *ngIf="modalOpen" (click)="closeModal($event)">
+    <div class="modal-dialog" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <header class="modal-header">
+        <div class="modal-title-area">
+          <div class="modal-title-row">
+            <h2 class="modal-title">{{ modalTitle }}</h2>
+          </div>
+          <div class="modal-subtitle" *ngIf="modalSubtitle">{{ modalSubtitle }}</div>
+        </div>
+
+        <div class="modal-actions">
+          <input *ngIf="modalRecords.length > 2" type="text" class="modal-search" placeholder="Search in these records…"
+            [(ngModel)]="modalSearchTerm" />
+          <button class="btn-export" (click)="exportModalCsv()" [disabled]="!displayedModalRecords.length"
+            title="Download CSV">
+            <span>Export CSV</span>
+          </button>
+          <button class="modal-close-btn" (click)="closeModal()" aria-label="Close" title="Close (Esc)">✕</button>
+        </div>
+      </header>
+
+
+      <div class="modal-body">
+        <table class="grid-table" *ngIf="displayedModalRecords.length">
+          <thead>
+            <tr>
+              <th *ngFor="let col of modalColumns" (click)="sortModalBy(col)" class="sortable">
+                {{ columnTitle(col) }}
+                <span class="sort-caret" *ngIf="modalSortKey === col">{{ modalSortDir === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of displayedModalRecords">
+              <td *ngFor="let col of modalColumns">
+                <app-status-pill *ngIf="isStatusCol(col) && r[col]; else plainVal" [value]="r[col]"></app-status-pill>
+                <ng-template #plainVal>{{ formatCell(r[col], col) }}</ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="empty-state" *ngIf="!displayedModalRecords.length">
+          <div class="empty-icon">📂</div>
+          <div class="empty-text">No records found for this selection.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

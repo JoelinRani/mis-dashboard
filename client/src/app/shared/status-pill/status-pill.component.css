@@ -1,0 +1,38 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+
+.role-none {
+  background: var(--chip-bg);
+  color: var(--text-secondary);
+}
+
+.role-good {
+  background: color-mix(in srgb, var(--status-good) 15%, transparent);
+  color: var(--status-good);
+}
+
+.role-warning {
+  background: color-mix(in srgb, var(--status-warning) 20%, transparent);
+  color: var(--status-warning-text);
+}
+
+.role-serious {
+  background: color-mix(in srgb, var(--status-serious) 18%, transparent);
+  color: var(--status-serious-text);
+}
+
+.role-critical {
+  background: color-mix(in srgb, var(--status-critical) 15%, transparent);
+  color: var(--status-critical);
+}

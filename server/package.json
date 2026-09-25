@@ -1,0 +1,16 @@
+{
+  "name": "park-mis-dashboard-server",
+  "version": "1.0.0",
+  "description": "Backend API that reads department MIS Excel files from a shared folder and serves normalized dashboard JSON to the Angular client.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "xlsx": "^0.18.5"
+  }
+}
