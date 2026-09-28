@@ -24,14 +24,91 @@
     </button>
   </header>
 
+  <!-- Dynamic Filters Bar (CRE Utilization) -->
+  <section class="filters-bar" *ngIf="data.department === 'cre-utilization'">
+    <div class="filter-group">
+      <span class="filter-title">FILTERS</span>
+
+      <div class="filter-control">
+        <label for="monthFilter" class="filter-label">Month:</label>
+        <select id="monthFilter" class="filter-select select-month" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
+          <option *ngFor="let m of monthsList" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+
+      <div class="filter-control">
+        <label for="clientFilter" class="filter-label">Client:</label>
+        <select id="clientFilter" class="filter-select select-client" [(ngModel)]="selectedClient" (change)="onFilterChange()">
+          <option *ngFor="let c of clientsList" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <span class="filter-hint">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="19,12 5,5 5,19"></polygon>
+        </svg>
+        Use the dropdowns to update every KPI, chart and table below
+      </span>
+    </div>
+  </section>
+
+  <!-- Dynamic Filters Bar (Marketing Lead Generation) -->
+  <section class="filters-bar marketing-theme" *ngIf="data.department === 'marketing'">
+    <div class="filter-group">
+      <span class="filter-title">FILTERS:</span>
+
+      <div class="filter-control" *ngIf="monthsList.length > 1">
+        <label for="mMonthFilter" class="filter-label">Month:</label>
+        <select id="mMonthFilter" class="filter-select select-coral" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
+          <option *ngFor="let m of monthsList" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+
+      <div class="filter-control">
+        <label for="mClientFilter" class="filter-label">Client:</label>
+        <select id="mClientFilter" class="filter-select select-coral" [(ngModel)]="selectedClient" (change)="onFilterChange()">
+          <option *ngFor="let c of clientsList" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <div class="filter-control">
+        <label for="mStateFilter" class="filter-label">State:</label>
+        <select id="mStateFilter" class="filter-select select-coral" [(ngModel)]="selectedState" (change)="onFilterChange()">
+          <option *ngFor="let s of statesList" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="filter-control">
+        <label for="mPropFilter" class="filter-label">Property Type:</label>
+        <select id="mPropFilter" class="filter-select select-coral" [(ngModel)]="selectedPropertyType" (change)="onFilterChange()">
+          <option *ngFor="let p of propertyTypesList" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="filter-control" *ngIf="accountTypesList.length > 2">
+        <label for="mAccFilter" class="filter-label">Account Type:</label>
+        <select id="mAccFilter" class="filter-select select-coral" [(ngModel)]="selectedAccountType" (change)="onFilterChange()">
+          <option *ngFor="let a of accountTypesList" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+
+      <!-- <span class="filter-hint">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="19,12 5,5 5,19"></polygon>
+        </svg>
+        Use the dropdowns to update every KPI, chart and table below
+      </span> -->
+    </div>
+  </section>
+
   <!-- Interactive KPI Metric Cards -->
   <section class="kpi-grid">
-    <app-kpi-card *ngFor="let k of data.kpis; trackBy: trackByKpi" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>
+    <app-kpi-card *ngFor="let k of displayedKpis" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>
   </section>
 
   <!-- Interactive Charts Grid -->
   <section class="chart-grid">
-    <app-chart-panel *ngFor="let c of data.charts; trackBy: trackByChart" [chart]="c" (sliceClick)="onChartSliceClick($event)"
+    <app-chart-panel *ngFor="let c of displayedCharts" [chart]="c" (sliceClick)="onChartSliceClick($event)"
       (chartClick)="onChartClick($event)"></app-chart-panel>
   </section>
 

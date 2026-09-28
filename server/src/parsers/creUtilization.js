@@ -71,12 +71,14 @@ function parseCreUtilization(existingWb = null) {
   const clientHours = utilization.filter((u) => u.type === 'client');
 
   const kpis = [
-    { key: 'filesReceived', label: 'Files Received', value: totalReceived, format: 'number' },
-    { key: 'filesDelivered', label: 'Files Delivered', value: totalDelivered, format: 'number' },
-    { key: 'onTimePct', label: 'Avg On-Time Delivery', value: Math.round(avg(deliverables, (r) => r.onTimeDeliveryPct) * 10) / 10, format: 'percent' },
-    { key: 'qualityPct', label: 'Avg Quality', value: Math.round(avg(deliverables, (r) => r.qualityPct) * 10) / 10, format: 'percent' },
-    { key: 'pendingFiles', label: 'Pending Files', value: sum(deliverables, (r) => r.pendingFiles), format: 'number' },
-    { key: 'overdueFiles', label: 'Overdue Files', value: sum(deliverables, (r) => r.overdueFiles), format: 'number' },
+    { key: 'filesReceived', label: 'FILES RECEIVED', value: totalReceived, format: 'number' },
+    { key: 'filesDelivered', label: 'FILES DELIVERED', value: totalDelivered, format: 'number' },
+    { key: 'onTimePct', label: 'ON-TIME DELIVERY %', value: Math.round(avg(deliverables, (r) => r.onTimeDeliveryPct) * 10) / 10, format: 'percent' },
+    { key: 'qualityPct', label: 'QUALITY %', value: Math.round(avg(deliverables, (r) => r.qualityPct) * 10) / 10, format: 'percent' },
+    { key: 'pendingFiles', label: 'PENDING FILES', value: sum(deliverables, (r) => r.pendingFiles), format: 'number' },
+    { key: 'overdueFiles', label: 'OVERDUE FILES', value: sum(deliverables, (r) => r.overdueFiles), format: 'number' },
+    { key: 'totalClientHours', label: 'TOTAL HOURS (SELECTED CLIENT)', value: Math.round(sum(clientHours, (u) => u.hours) * 10) / 10, format: 'number' },
+    { key: 'resourcesAllocated', label: 'RESOURCES ALLOCATED', value: distinct(clientHours, (u) => u.employee) || sum(deliverables, (r) => r.resourcesAllocated), format: 'number' },
   ];
 
   const groupSum = (arr, keyFn, valFn) => {
