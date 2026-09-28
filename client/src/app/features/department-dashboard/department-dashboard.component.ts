@@ -111,6 +111,22 @@ export class DepartmentDashboardComponent implements OnInit {
   modalSortKey: string | null = null;
   modalSortDir: 'asc' | 'desc' = 'asc';
 
+  // Filter state for CRE Utilization & Marketing Lead Generation
+  selectedMonth = 'All';
+  selectedClient = 'All';
+  selectedState = 'All';
+  selectedPropertyType = 'All';
+  selectedAccountType = 'All';
+
+  monthsList: string[] = ['All'];
+  clientsList: string[] = ['All'];
+  statesList: string[] = ['All'];
+  propertyTypesList: string[] = ['All'];
+  accountTypesList: string[] = ['All'];
+
+  displayedKpis: Kpi[] = [];
+  displayedCharts: ChartDef[] = [];
+
   constructor(private route: ActivatedRoute, private api: ApiService) { }
 
   @HostListener('window:keydown.escape')
@@ -128,6 +144,7 @@ export class DepartmentDashboardComponent implements OnInit {
       if (cached) {
         this.normalizeDepartmentData(cached);
         this.data = cached;
+        this.initFilterOptionsAndData();
         this.loading = false;
         this.error = null;
       } else {
@@ -140,6 +157,7 @@ export class DepartmentDashboardComponent implements OnInit {
       next: (data) => {
         this.normalizeDepartmentData(data);
         this.data = data;
+        this.initFilterOptionsAndData();
         this.loading = false;
       },
       error: (err) => {
@@ -162,6 +180,272 @@ export class DepartmentDashboardComponent implements OnInit {
     }
   }
 
+  private initFilterOptionsAndData(): void {
+    if (!this.data) {
+      this.displayedKpis = [];
+      this.displayedCharts = [];
+      return;
+    }
+
+    if (this.data.department === 'cre-utilization') {
+      const deliverables = this.getTableRecords('deliverables');
+      const utilization = this.getTableRecords('utilization');
+
+      const allMonths = new Set<string>();
+      deliverables.forEach((d) => { if (d.month) allMonths.add(d.month); });
+      utilization.forEach((u) => { if (u.month) allMonths.add(u.month); });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+      this.monthsList = ['All', ...sortedMonths];
+
+      const allClients = new Set<string>();
+      deliverables.forEach((d) => { if (d.client) allClients.add(d.client); });
+      utilization.filter((u) => u.type === 'client').forEach((u) => { if (u.category) allClients.add(u.category); });
+      this.clientsList = ['All', ...[...allClients].sort()];
+
+      this.selectedMonth = 'All';
+      this.selectedClient = 'All';
+      this.updateFilteredCreData();
+    } else if (this.data.department === 'marketing') {
+      const leads = this.getTableRecords('leads');
+
+      const allMonths = new Set<string>();
+      const allClients = new Set<string>();
+      const allStates = new Set<string>();
+      const allPropertyTypes = new Set<string>();
+      const allAccountTypes = new Set<string>();
+
+      leads.forEach((l) => {
+        if (l.month) allMonths.add(l.month);
+        if (l.client) allClients.add(l.client);
+        if (l.state) allStates.add(l.state);
+        if (l.propertyType) allPropertyTypes.add(l.propertyType);
+        if (l.accountType) allAccountTypes.add(l.accountType);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.monthsList = sortedMonths.length ? ['All', ...sortedMonths] : ['All', ...monthOrder];
+      this.clientsList = ['All', ...[...allClients].sort()];
+      this.statesList = ['All', ...[...allStates].sort()];
+      this.propertyTypesList = ['All', ...[...allPropertyTypes].sort()];
+      this.accountTypesList = ['All', ...[...allAccountTypes].sort()];
+
+      this.selectedMonth = 'All';
+      this.selectedClient = 'All';
+      this.selectedState = 'All';
+      this.selectedPropertyType = 'All';
+      this.selectedAccountType = 'All';
+
+      this.updateFilteredMarketingData();
+    } else {
+      this.displayedKpis = this.data.kpis || [];
+      this.displayedCharts = this.data.charts || [];
+    }
+  }
+
+  onFilterChange(): void {
+    if (this.data?.department === 'cre-utilization') {
+      this.updateFilteredCreData();
+    } else if (this.data?.department === 'marketing') {
+      this.updateFilteredMarketingData();
+    }
+  }
+
+  updateFilteredCreData(): void {
+    if (!this.data || this.data.department !== 'cre-utilization') {
+      if (this.data) {
+        this.displayedKpis = this.data.kpis || [];
+        this.displayedCharts = this.data.charts || [];
+      }
+      return;
+    }
+
+    const deliverablesAll = this.getTableRecords('deliverables');
+    const utilizationAll = this.getTableRecords('utilization');
+
+    const filteredDeliverables = deliverablesAll.filter((d) => {
+      const matchMonth = this.selectedMonth === 'All' || d.month === this.selectedMonth;
+      const matchClient = this.selectedClient === 'All' || d.client === this.selectedClient;
+      return matchMonth && matchClient;
+    });
+
+    const filteredUtilization = utilizationAll.filter((u) => {
+      const matchMonth = this.selectedMonth === 'All' || u.month === this.selectedMonth;
+      const matchClient = this.selectedClient === 'All' || u.category === this.selectedClient;
+      return matchMonth && matchClient;
+    });
+
+    const clientHours = filteredUtilization.filter((u) => u.type === 'client');
+
+    const sum = (arr: any[], fn: (r: any) => number) => arr.reduce((a, r) => a + (fn(r) || 0), 0);
+    const avg = (arr: any[], fn: (r: any) => number) => (arr.length ? sum(arr, fn) / arr.length : 0);
+
+    const totalReceived = sum(filteredDeliverables, (r) => r.filesReceived);
+    const totalDelivered = sum(filteredDeliverables, (r) => r.filesDelivered);
+    const totalHours = Math.round(sum(clientHours, (u) => u.hours) * 10) / 10;
+
+    const distinctEmps = new Set(clientHours.map((u) => u.employee).filter(Boolean)).size;
+    const sumResourcesDeliv = sum(filteredDeliverables, (r) => r.resourcesAllocated);
+    const resourcesAllocated = distinctEmps || sumResourcesDeliv;
+
+    let onTimePct = 0;
+    if (filteredDeliverables.length > 0) {
+      const totalDeliveredBeforeDue = sum(filteredDeliverables, (r) => r.filesDeliveredBeforeDue);
+      if (totalDelivered > 0 && totalDeliveredBeforeDue > 0) {
+        onTimePct = Math.round((totalDeliveredBeforeDue / totalDelivered) * 1000) / 10;
+      } else {
+        onTimePct = Math.round(avg(filteredDeliverables, (r) => r.onTimeDeliveryPct) * 10) / 10;
+      }
+    }
+
+    const qualityPct = filteredDeliverables.length
+      ? Math.round(avg(filteredDeliverables, (r) => r.qualityPct) * 10) / 10
+      : 0;
+
+    const totalPending = sum(filteredDeliverables, (r) => r.pendingFiles);
+    const totalOverdue = sum(filteredDeliverables, (r) => r.overdueFiles);
+
+    const clientLabel = this.selectedClient !== 'All' ? `TOTAL HOURS (${this.selectedClient.toUpperCase()})` : 'TOTAL HOURS (SELECTED CLIENT)';
+
+    this.displayedKpis = [
+      { key: 'filesReceived', label: 'FILES RECEIVED', value: totalReceived, format: 'number' },
+      { key: 'filesDelivered', label: 'FILES DELIVERED', value: totalDelivered, format: 'number' },
+      { key: 'onTimePct', label: 'ON-TIME DELIVERY %', value: onTimePct, format: 'percent' },
+      { key: 'qualityPct', label: 'QUALITY %', value: qualityPct, format: 'percent' },
+      { key: 'pendingFiles', label: 'PENDING FILES', value: totalPending, format: 'number' },
+      { key: 'overdueFiles', label: 'OVERDUE FILES', value: totalOverdue, format: 'number' },
+      { key: 'totalClientHours', label: clientLabel, value: totalHours, format: 'number' },
+      { key: 'resourcesAllocated', label: 'RESOURCES ALLOCATED', value: resourcesAllocated, format: 'number' },
+    ];
+
+    const groupSum = (arr: any[], keyFn: (r: any) => string, valFn: (r: any) => number) => {
+      const map = new Map<string, number>();
+      arr.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + (valFn(r) || 0));
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    let filesChartTitle = 'Files Received vs Delivered by Month';
+    let byRec: [string, number][] = [];
+    let byDel: [string, number][] = [];
+
+    if (this.selectedMonth === 'All') {
+      filesChartTitle = this.selectedClient !== 'All'
+        ? `Files Received vs Delivered for ${this.selectedClient} by Month`
+        : 'Files Received vs Delivered by Month';
+      byRec = groupSum(filteredDeliverables, (r) => r.month, (r) => r.filesReceived)
+        .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]));
+      byDel = groupSum(filteredDeliverables, (r) => r.month, (r) => r.filesDelivered)
+        .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]));
+    } else {
+      filesChartTitle = `Files Received vs Delivered in ${this.selectedMonth}`;
+      byRec = groupSum(filteredDeliverables, (r) => r.client, (r) => r.filesReceived);
+      byDel = groupSum(filteredDeliverables, (r) => r.client, (r) => r.filesDelivered);
+    }
+
+    const hoursByClientData = groupSum(clientHours, (u) => u.category, (u) => u.hours).slice(0, 12);
+    const hoursByEmpData = groupSum(clientHours, (u) => u.employee, (u) => u.hours).slice(0, 15);
+
+    this.displayedCharts = [
+      {
+        id: 'filesByMonth',
+        title: filesChartTitle,
+        type: 'bar',
+        labels: byRec.map((x) => x[0]),
+        series: [
+          { name: 'Files Received', data: byRec.map((x) => x[1]) },
+          { name: 'Files Delivered', data: byDel.map((x) => x[1]) },
+        ],
+      },
+      {
+        id: 'hoursByClient',
+        title: this.selectedClient !== 'All' ? `Hours Logged for ${this.selectedClient}` : 'Hours by Client (Top 12)',
+        type: 'bar',
+        labels: hoursByClientData.map((x) => x[0]),
+        series: [{ name: 'Hours', data: hoursByClientData.map((x) => Math.round(x[1] * 10) / 10) }],
+      },
+      {
+        id: 'hoursByEmployee',
+        title: 'Hours by Employee (Top 15)',
+        type: 'bar',
+        labels: hoursByEmpData.map((x) => x[0]),
+        series: [{ name: 'Hours', data: hoursByEmpData.map((x) => Math.round(x[1] * 10) / 10) }],
+      },
+    ];
+  }
+
+  updateFilteredMarketingData(): void {
+    if (!this.data || this.data.department !== 'marketing') return;
+
+    const leadsAll = this.getTableRecords('leads');
+
+    const filteredLeads = leadsAll.filter((l) => {
+      const matchMonth = !l.month || this.selectedMonth === 'All' || l.month === this.selectedMonth;
+      const matchClient = this.selectedClient === 'All' || l.client === this.selectedClient;
+      const matchState = this.selectedState === 'All' || l.state === this.selectedState;
+      const matchProp = this.selectedPropertyType === 'All' || l.propertyType === this.selectedPropertyType;
+      const matchAcc = this.selectedAccountType === 'All' || l.accountType === this.selectedAccountType;
+      return matchMonth && matchClient && matchState && matchProp && matchAcc;
+    });
+
+    const sum = (arr: any[], fn: (r: any) => number) => arr.reduce((a, r) => a + (fn(r) || 0), 0);
+    const distinct = (arr: any[], fn: (r: any) => string) => new Set(arr.map(fn).filter(Boolean)).size;
+
+    const totalLeads = sum(filteredLeads, (r) => r.leadsGenerated);
+    const doneLeads = sum(filteredLeads.filter((r) => r.preliminaryResearch === 'Done'), (r) => r.leadsGenerated);
+    const agentCodedLeads = sum(filteredLeads.filter((r) => r.accountType === 'Agent Coded'), (r) => r.leadsGenerated);
+
+    const researchDonePct = totalLeads ? Math.round((doneLeads / totalLeads) * 1000) / 10 : 0;
+    const agentCodedPct = totalLeads ? Math.round((agentCodedLeads / totalLeads) * 1000) / 10 : 0;
+
+    this.displayedKpis = [
+      { key: 'totalLeads', label: 'Total Leads Generated', value: totalLeads, format: 'number' },
+      { key: 'clients', label: 'Clients', value: distinct(filteredLeads, (r) => r.client), format: 'number' },
+      { key: 'states', label: 'States Covered', value: distinct(filteredLeads, (r) => r.state), format: 'number' },
+      { key: 'counties', label: 'Counties Covered', value: distinct(filteredLeads, (r) => r.county), format: 'number' },
+      { key: 'researchDonePct', label: 'Preliminary Research Done', value: researchDonePct, format: 'percent' },
+      { key: 'agentCodedPct', label: 'Agent Coded Share', value: agentCodedPct, format: 'percent' },
+    ];
+
+    const groupSum = (keyFn: (r: any) => string) => {
+      const map = new Map<string, number>();
+      filteredLeads.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + (r.leadsGenerated || 0));
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const byClient = groupSum((r) => r.client);
+    const byState = groupSum((r) => r.state);
+    const byAccountType = groupSum((r) => r.accountType);
+    const byPropertyType = groupSum((r) => r.propertyType);
+
+    this.displayedCharts = [
+      { id: 'byClient', title: 'Leads by Client', type: 'bar', labels: byClient.map((x) => x[0]), series: [{ name: 'Leads Generated', data: byClient.map((x) => x[1]) }] },
+      { id: 'byState', title: 'Leads by State', type: 'bar', labels: byState.map((x) => x[0]), series: [{ name: 'Leads Generated', data: byState.map((x) => x[1]) }] },
+      { id: 'byAccountType', title: 'Leads by Account Type', type: 'pie', labels: byAccountType.map((x) => x[0]), series: [{ name: 'Leads Generated', data: byAccountType.map((x) => x[1]) }] },
+      { id: 'byPropertyType', title: 'Leads by Property Type', type: 'pie', labels: byPropertyType.map((x) => x[0]), series: [{ name: 'Leads Generated', data: byPropertyType.map((x) => x[1]) }] },
+    ];
+  }
+
   refresh(): void {
     const id = this.route.snapshot.paramMap.get('departmentId');
     if (!id) return;
@@ -170,6 +454,7 @@ export class DepartmentDashboardComponent implements OnInit {
       next: (data) => {
         this.normalizeDepartmentData(data);
         this.data = data;
+        this.initFilterOptionsAndData();
         this.refreshing = false;
         this.loading = false;
       },
@@ -353,39 +638,66 @@ export class DepartmentDashboardComponent implements OnInit {
           break;
       }
     } else if (dep === 'marketing') {
-      const leads = this.getTableRecords('leads');
+      const leadsAll = this.getTableRecords('leads');
+      const leads = leadsAll.filter((l) => {
+        const matchMonth = !l.month || this.selectedMonth === 'All' || l.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || l.client === this.selectedClient;
+        const matchState = this.selectedState === 'All' || l.state === this.selectedState;
+        const matchProp = this.selectedPropertyType === 'All' || l.propertyType === this.selectedPropertyType;
+        const matchAcc = this.selectedAccountType === 'All' || l.accountType === this.selectedAccountType;
+        return matchMonth && matchClient && matchState && matchProp && matchAcc;
+      });
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}, State: ${this.selectedState}, Property Type: ${this.selectedPropertyType}`;
+
       switch (kpi.key) {
         case 'clients':
-          this.showDataModal(`Clients (${kpi.value})`, this.getClientsSummary(leads));
+          this.showDataModal(`Clients (${kpi.value})`, this.getClientsSummary(leads), filterSubtitle);
           break;
         case 'states':
-          this.showDataModal(`States Covered (${kpi.value})`, this.getStatesSummary(leads));
+          this.showDataModal(`States Covered (${kpi.value})`, this.getStatesSummary(leads), filterSubtitle);
           break;
         case 'counties':
-          this.showDataModal(`Counties Covered (${kpi.value})`, this.getCountiesSummary(leads));
+          this.showDataModal(`Counties Covered (${kpi.value})`, this.getCountiesSummary(leads), filterSubtitle);
           break;
         case 'researchDonePct':
-          this.showDataModal(`Preliminary Research Done (${kpi.value}%)`, leads.filter((l) => l.preliminaryResearch === 'Done'));
+          this.showDataModal(`Preliminary Research Done (${kpi.value}%)`, leads.filter((l) => l.preliminaryResearch === 'Done'), filterSubtitle);
           break;
         case 'agentCodedPct':
-          this.showDataModal(`Agent Coded Leads`, leads.filter((l) => l.accountType === 'Agent Coded'));
+          this.showDataModal(`Agent Coded Leads`, leads.filter((l) => l.accountType === 'Agent Coded'), filterSubtitle);
           break;
         default:
-          this.showDataModal(`Total Leads Generated (${kpi.value.toLocaleString()})`, leads);
+          this.showDataModal(`Total Leads Generated (${kpi.value.toLocaleString()})`, leads, filterSubtitle);
           break;
       }
     } else if (dep === 'cre-utilization') {
-      const deliverables = this.getTableRecords('deliverables');
-      const utilization = this.getTableRecords('utilization');
+      const deliverablesAll = this.getTableRecords('deliverables');
+      const utilizationAll = this.getTableRecords('utilization');
+
+      const deliverables = deliverablesAll.filter((d) => {
+        const matchMonth = this.selectedMonth === 'All' || d.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || d.client === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const utilization = utilizationAll.filter((u) => {
+        const matchMonth = this.selectedMonth === 'All' || u.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || u.category === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}`;
+
       switch (kpi.key) {
         case 'clientsServed':
-          this.showDataModal(`Clients Served (${kpi.value})`, this.getClientsUtilizationSummary(utilization));
+          this.showDataModal(`Clients Served (${kpi.value})`, this.getClientsUtilizationSummary(utilization), filterSubtitle);
           break;
         case 'employees':
-          this.showDataModal(`Employees Logging Hours (${kpi.value})`, this.getEmployeesUtilizationSummary(utilization));
+        case 'resourcesAllocated':
+          this.showDataModal(`Resources Allocated (${kpi.value})`, this.getEmployeesUtilizationSummary(utilization), filterSubtitle);
           break;
         case 'totalClientHours':
-          this.showDataModal(`Resource Utilization Hours`, utilization.filter((u) => u.type === 'client'));
+          this.showDataModal(`Resource Utilization Hours (${kpi.value})`, utilization.filter((u) => u.type === 'client'), filterSubtitle);
           break;
         case 'filesDelivered':
           this.showDataModal(
@@ -396,7 +708,8 @@ export class DepartmentDashboardComponent implements OnInit {
                 month: d.month,
                 client: d.client,
                 filesDelivered: d.filesDelivered,
-              }))
+              })),
+            filterSubtitle
           );
           break;
         case 'filesReceived':
@@ -408,7 +721,8 @@ export class DepartmentDashboardComponent implements OnInit {
                 month: d.month,
                 client: d.client,
                 filesReceived: d.filesReceived,
-              }))
+              })),
+            filterSubtitle
           );
           break;
         case 'onTimePct':
@@ -418,7 +732,8 @@ export class DepartmentDashboardComponent implements OnInit {
               month: d.month,
               client: d.client,
               onTimeDeliveryPct: d.onTimeDeliveryPct,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'qualityPct':
@@ -428,7 +743,8 @@ export class DepartmentDashboardComponent implements OnInit {
               month: d.month,
               client: d.client,
               qualityPct: d.qualityPct,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'pendingFiles':
@@ -440,7 +756,8 @@ export class DepartmentDashboardComponent implements OnInit {
                 month: d.month,
                 client: d.client,
                 pendingFiles: d.pendingFiles,
-              }))
+              })),
+            filterSubtitle
           );
           break;
         case 'overdueFiles':
@@ -452,11 +769,12 @@ export class DepartmentDashboardComponent implements OnInit {
                 month: d.month,
                 client: d.client,
                 overdueFiles: d.overdueFiles,
-              }))
+              })),
+            filterSubtitle
           );
           break;
         default:
-          this.showDataModal(`Client Deliverables`, deliverables);
+          this.showDataModal(`Client Deliverables`, deliverables, filterSubtitle);
           break;
       }
     } else if (dep === 'outbound-desk') {
@@ -634,25 +952,55 @@ export class DepartmentDashboardComponent implements OnInit {
         this.showDataModal(`Resource Assignments: ${event.label} (${filtered.length})`, filtered);
       }
     } else if (dep === 'marketing') {
-      const leads = this.getTableRecords('leads');
+      const leadsAll = this.getTableRecords('leads');
+      const leads = leadsAll.filter((l) => {
+        const matchMonth = !l.month || this.selectedMonth === 'All' || l.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || l.client === this.selectedClient;
+        const matchState = this.selectedState === 'All' || l.state === this.selectedState;
+        const matchProp = this.selectedPropertyType === 'All' || l.propertyType === this.selectedPropertyType;
+        const matchAcc = this.selectedAccountType === 'All' || l.accountType === this.selectedAccountType;
+        return matchMonth && matchClient && matchState && matchProp && matchAcc;
+      });
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}, State: ${this.selectedState}, Property Type: ${this.selectedPropertyType}`;
+
       if (event.chartId === 'byClient') {
-        this.showDataModal(`Leads for Client: ${event.label}`, leads.filter((l) => l.client === event.label));
+        this.showDataModal(`Leads for Client: ${event.label}`, leads.filter((l) => l.client === event.label), filterSubtitle);
       } else if (event.chartId === 'byState') {
-        this.showDataModal(`Leads in State: ${event.label}`, leads.filter((l) => l.state === event.label));
+        this.showDataModal(`Leads in State: ${event.label}`, leads.filter((l) => l.state === event.label), filterSubtitle);
       } else if (event.chartId === 'byAccountType') {
-        this.showDataModal(`Leads with Account Type: ${event.label}`, leads.filter((l) => l.accountType === event.label));
+        this.showDataModal(`Leads with Account Type: ${event.label}`, leads.filter((l) => l.accountType === event.label), filterSubtitle);
       } else if (event.chartId === 'byPropertyType') {
-        this.showDataModal(`Leads with Property Type: ${event.label}`, leads.filter((l) => l.propertyType === event.label));
+        this.showDataModal(`Leads with Property Type: ${event.label}`, leads.filter((l) => l.propertyType === event.label), filterSubtitle);
       }
     } else if (dep === 'cre-utilization') {
-      const deliverables = this.getTableRecords('deliverables');
-      const utilization = this.getTableRecords('utilization');
+      const deliverablesAll = this.getTableRecords('deliverables');
+      const utilizationAll = this.getTableRecords('utilization');
+
+      const deliverables = deliverablesAll.filter((d) => {
+        const matchMonth = this.selectedMonth === 'All' || d.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || d.client === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const utilization = utilizationAll.filter((u) => {
+        const matchMonth = this.selectedMonth === 'All' || u.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || u.category === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}`;
+
       if (event.chartId === 'filesByMonth') {
-        this.showDataModal(`Deliverables for Month: ${event.label}`, deliverables.filter((d) => d.month === event.label));
+        if (this.selectedMonth === 'All') {
+          this.showDataModal(`Deliverables for Month: ${event.label}`, deliverables.filter((d) => d.month === event.label), filterSubtitle);
+        } else {
+          this.showDataModal(`Deliverables for Client: ${event.label}`, deliverables.filter((d) => d.client === event.label), filterSubtitle);
+        }
       } else if (event.chartId === 'hoursByClient') {
-        this.showDataModal(`Hours for Client: ${event.label}`, utilization.filter((u) => u.category === event.label));
+        this.showDataModal(`Hours for Client: ${event.label}`, utilization.filter((u) => u.category === event.label), filterSubtitle);
       } else if (event.chartId === 'hoursByEmployee') {
-        this.showDataModal(`Hours for Employee: ${event.label}`, utilization.filter((u) => u.employee === event.label));
+        this.showDataModal(`Hours for Employee: ${event.label}`, utilization.filter((u) => u.employee === event.label), filterSubtitle);
       }
     } else if (dep === 'outbound-desk') {
       const calls = this.getTableRecords('calls');
@@ -684,10 +1032,37 @@ export class DepartmentDashboardComponent implements OnInit {
         this.showDataModal(`Team Allocations`, this.getTableRecords('employeeSummary'));
       }
     } else if (dep === 'marketing') {
-      this.showDataModal(chart.title, this.getTableRecords('leads'));
+      const leadsAll = this.getTableRecords('leads');
+      const leads = leadsAll.filter((l) => {
+        const matchMonth = !l.month || this.selectedMonth === 'All' || l.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || l.client === this.selectedClient;
+        const matchState = this.selectedState === 'All' || l.state === this.selectedState;
+        const matchProp = this.selectedPropertyType === 'All' || l.propertyType === this.selectedPropertyType;
+        const matchAcc = this.selectedAccountType === 'All' || l.accountType === this.selectedAccountType;
+        return matchMonth && matchClient && matchState && matchProp && matchAcc;
+      });
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}, State: ${this.selectedState}, Property Type: ${this.selectedPropertyType}`;
+      this.showDataModal(chart.title, leads, filterSubtitle);
     } else if (dep === 'cre-utilization') {
-      if (chart.id === 'filesByMonth') this.showDataModal(chart.title, this.getTableRecords('deliverables'));
-      else this.showDataModal(chart.title, this.getTableRecords('utilization'));
+      const deliverablesAll = this.getTableRecords('deliverables');
+      const utilizationAll = this.getTableRecords('utilization');
+
+      const deliverables = deliverablesAll.filter((d) => {
+        const matchMonth = this.selectedMonth === 'All' || d.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || d.client === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const utilization = utilizationAll.filter((u) => {
+        const matchMonth = this.selectedMonth === 'All' || u.month === this.selectedMonth;
+        const matchClient = this.selectedClient === 'All' || u.category === this.selectedClient;
+        return matchMonth && matchClient;
+      });
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonth}, Client: ${this.selectedClient}`;
+
+      if (chart.id === 'filesByMonth') this.showDataModal(chart.title, deliverables, filterSubtitle);
+      else this.showDataModal(chart.title, utilization, filterSubtitle);
     } else if (dep === 'outbound-desk') {
       this.showDataModal(chart.title, this.getTableRecords('calls'));
     }
