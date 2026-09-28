@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -149,7 +149,11 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
   displayedKpis: Kpi[] = [];
   displayedCharts: ChartDef[] = [];
 
-  constructor(private route: ActivatedRoute, private api: ApiService) { }
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   @HostListener('window:keydown.escape')
   onEscapePress(): void {
@@ -199,10 +203,11 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           this.error = err?.error?.error || 'Could not load this department\'s dashboard.';
         }
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
 
-    // Real-time SSE push notification when file changes on disk (<10ms)
+    // Real-time SSE push notification when live Excel file changes (<10ms)
     this.api.subscribeToEvents().pipe(
       takeUntil(this.destroy$)
     ).subscribe((evt) => {
@@ -212,13 +217,11 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Instant auto-sync polling every 500ms while tab is visible
-    interval(500).pipe(
+    // Gentle 3-second fallback heartbeat
+    interval(3000).pipe(
       takeUntil(this.destroy$)
     ).subscribe(() => {
-      if (document.visibilityState === 'visible') {
-        this.silentSync();
-      }
+      this.silentSync();
     });
   }
 
@@ -232,14 +235,22 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     if (!id || this.loading || this.refreshing) return;
     this.api.getDashboard(id, true).subscribe({
       next: (data) => {
-        if (data) {
+        if (data && data.department === id) {
           this.normalizeDepartmentData(data);
+          // Only update and re-render if data has ACTUALLY changed
           if (!this.isDataEqual(this.data, data)) {
-            this.data = data;
+            this.data = {
+              ...data,
+              kpis: data.kpis ? [...data.kpis.map((k) => ({ ...k }))] : [],
+              charts: data.charts ? [...data.charts.map((c) => ({ ...c, labels: [...(c.labels || [])], series: [...(c.series || []).map((s) => ({ ...s, data: [...s.data] }))] }))] : [],
+              tables: data.tables ? [...data.tables.map((t) => ({ ...t, records: [...(t.records || []).map((r) => ({ ...r }))] }))] : []
+            };
+            this.cdr.markForCheck();
+            this.cdr.detectChanges();
           }
         }
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -576,9 +587,17 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     this.modalSortKey = null;
     this.modalSortDir = 'asc';
 
-    // Extract columns from the first record or records set
+    // Extract all columns across records so no fields are missing
     if (records && records.length > 0) {
-      this.modalColumns = Object.keys(records[0]);
+      const colSet = new Set<string>();
+      records.forEach((r) => {
+        if (r && typeof r === 'object') {
+          Object.keys(r).forEach((k) => {
+            if (!k.startsWith('__')) colSet.add(k);
+          });
+        }
+      });
+      this.modalColumns = Array.from(colSet);
     } else {
       this.modalColumns = [];
     }
@@ -632,6 +651,24 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
   isStatusCol(col: string): boolean {
     return STATUS_KEYS.has(col) || col.toLowerCase().includes('status');
+  }
+
+  isWrapCol(col: string): boolean {
+    const l = col.toLowerCase();
+    return (
+      l.includes('activit') ||
+      l.includes('milestone') ||
+      l.includes('remark') ||
+      l.includes('desc') ||
+      l.includes('note') ||
+      l.includes('summary') ||
+      l.includes('comment') ||
+      l.includes('scope') ||
+      l.includes('action') ||
+      l.includes('feedback') ||
+      l.includes('reason') ||
+      l.includes('project')
+    );
   }
 
   formatCell(val: any, col: string): string {

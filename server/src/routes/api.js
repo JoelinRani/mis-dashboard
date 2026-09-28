@@ -1,7 +1,6 @@
 const express = require('express');
-const fs = require('fs');
 const { DEPARTMENTS } = require('../config');
-const { fetchWorkbookFromOneDrive, findLocalWorkbook, loadWorkbook, ONEDRIVE_SEARCH_PATHS } = require('../utils/excel');
+const { fetchWorkbookFromOneDrive } = require('../utils/excel');
 const { parseMarketing } = require('../parsers/marketing');
 const { parseCreUtilization } = require('../parsers/creUtilization');
 const { parseOutboundDesk } = require('../parsers/outboundDesk');
@@ -16,17 +15,14 @@ const PARSERS = {
   'it-operations': parseItOperations,
 };
 
+// In-memory instant cache
 const serverCache = new Map();
-let isSyncing = false;
 const sseClients = new Set();
-let debounceTimer = null;
+let activeDepartmentId = 'sw-engineering';
+let broadcastDebounce = null;
+let isCloudFetchInProgress = false;
 
 function broadcastChange(deptId) {
-  if (deptId) {
-    serverCache.delete(deptId);
-  } else {
-    serverCache.clear();
-  }
   const payload = JSON.stringify({ type: 'file_changed', departmentId: deptId || 'all', timestamp: Date.now() });
   for (const client of [...sseClients]) {
     try {
@@ -37,130 +33,85 @@ function broadcastChange(deptId) {
   }
 }
 
-function debouncedBroadcast(deptId) {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => {
+function notifyChange(deptId) {
+  if (broadcastDebounce) clearTimeout(broadcastDebounce);
+  broadcastDebounce = setTimeout(() => {
     broadcastChange(deptId);
-  }, 40);
+  }, 20);
 }
 
-// Watch local OneDrive directories for instantaneous (<10ms) save detection
-for (const dir of ONEDRIVE_SEARCH_PATHS) {
-  if (fs.existsSync(dir)) {
-    try {
-      const watcher = fs.watch(dir, { recursive: true }, (eventType, filename) => {
-        if (!filename || filename.startsWith('~$')) return;
-        const lowerName = filename.toLowerCase();
-        const matchedDept = DEPARTMENTS.find(d => 
-          (d.fileName && lowerName.endsWith(d.fileName.toLowerCase())) || 
-          (d.fileName && lowerName.includes(d.fileName.toLowerCase())) ||
-          lowerName.includes(d.id)
-        );
-        debouncedBroadcast(matchedDept ? matchedDept.id : null);
-      });
-      watcher.on('error', () => {});
-    } catch {
-      try {
-        const watcher = fs.watch(dir, (eventType, filename) => {
-          if (!filename || filename.startsWith('~$')) return;
-          debouncedBroadcast(null);
-        });
-        watcher.on('error', () => {});
-      } catch {}
-    }
-  }
-}
-
-// Read local workbook with retry for brief Excel file-locks during save (<50ms)
-async function readLocalWorkbookWithRetry(filePath, maxRetries = 8, delayMs = 35) {
-  let lastErr = null;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return loadWorkbook(filePath);
-    } catch (err) {
-      lastErr = err;
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-  throw lastErr;
-}
-
-// Fetch single department workbook directly (ultra-fast direct cloud stream or instant local read)
-async function fetchAndParseDepartment(deptId) {
+/**
+ * Parses and updates the department cache directly from the live OneDrive Cloud URL in memory.
+ */
+async function syncDepartmentFromCloud(deptId) {
   const dept = DEPARTMENTS.find((d) => d.id === deptId);
   const parser = PARSERS[deptId];
   if (!dept || !parser) throw new Error(`Unknown department "${deptId}"`);
 
-  let wb = null;
-  let fileMtime = 0;
+  if (!dept.cloudUrl) throw new Error(`No cloudUrl configured for department "${deptId}"`);
 
-  // 1. Check local file on disk
-  const localFile = findLocalWorkbook(dept.fileName || dept.id);
-  if (localFile && fs.existsSync(localFile)) {
-    try {
-      fileMtime = fs.statSync(localFile).mtimeMs;
-      wb = await readLocalWorkbookWithRetry(localFile);
-    } catch {}
-  }
-
-  // 2. Fallback or refresh via ultra-fast direct OneDrive cloud stream (~300ms)
-  if (!wb) {
-    try {
-      wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
-    } catch (err) {
-      // If direct cloud fails and we have a local file, try local file again
-      if (localFile && fs.existsSync(localFile)) {
-        wb = await readLocalWorkbookWithRetry(localFile);
-      } else {
-        throw err;
-      }
-    }
-  }
+  const wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
+  if (!wb) throw new Error(`Could not load workbook for department "${deptId}" from cloud`);
 
   const data = parser(wb);
   if (!data) throw new Error(`Could not parse data for department "${deptId}"`);
-  data.sourceUrl = dept.cloudUrl;
 
-  serverCache.set(deptId, { data, mtimeMs: fileMtime, timestamp: Date.now() });
+  const prev = serverCache.get(deptId);
+  const hasChanged =
+    !prev ||
+    JSON.stringify(prev.data.kpis) !== JSON.stringify(data.kpis) ||
+    JSON.stringify(prev.data.tables) !== JSON.stringify(data.tables);
+
+  data.sourceUrl = dept.cloudUrl;
+  data.sourceType = 'cloud';
+  data.generatedAt = hasChanged ? new Date().toISOString() : (prev?.data?.generatedAt || new Date().toISOString());
+
+  serverCache.set(deptId, {
+    data,
+    timestamp: Date.now(),
+  });
+
+  if (hasChanged) {
+    notifyChange(deptId);
+  }
+
   return data;
 }
 
-// Fast 200ms file-mtime watcher loop across all departments to guarantee sub-second updates
-setInterval(() => {
-  for (const dept of DEPARTMENTS) {
-    try {
-      const localFile = findLocalWorkbook(dept.fileName || dept.id);
-      if (localFile && fs.existsSync(localFile)) {
-        const stat = fs.statSync(localFile);
-        const cached = serverCache.get(dept.id);
-        if (cached && cached.mtimeMs && cached.mtimeMs !== stat.mtimeMs) {
-          broadcastChange(dept.id);
-        }
-      }
-    } catch {}
-  }
-}, 200);
-
-// Continuous background cloud stream sync every 1.5 seconds so web/drive changes reflect in ~1 second
-let cloudSyncIndex = 0;
-setInterval(async () => {
-  if (DEPARTMENTS.length === 0) return;
-  const dept = DEPARTMENTS[cloudSyncIndex % DEPARTMENTS.length];
-  cloudSyncIndex++;
-  try {
-    const wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
-    const parser = PARSERS[dept.id];
-    if (parser && wb) {
-      const freshData = parser(wb);
-      freshData.sourceUrl = dept.cloudUrl;
-      const cached = serverCache.get(dept.id);
-      if (!cached || JSON.stringify(cached.data) !== JSON.stringify(freshData)) {
-        serverCache.set(dept.id, { data: freshData, mtimeMs: 0, timestamp: Date.now() });
-        broadcastChange(dept.id);
+// 1. Ultra-fast continuous live cloud worker: streams the active department every 800ms directly from OneDrive cloud
+(async function continuousActiveCloudWorker() {
+  while (true) {
+    if (activeDepartmentId && !isCloudFetchInProgress) {
+      isCloudFetchInProgress = true;
+      try {
+        await syncDepartmentFromCloud(activeDepartmentId);
+      } catch {}
+      finally {
+        isCloudFetchInProgress = false;
       }
     }
+    await new Promise((r) => setTimeout(r, 800));
+  }
+})();
+
+// 2. Background rotation for other inactive departments
+let backgroundIndex = 0;
+setInterval(async () => {
+  const otherDepts = DEPARTMENTS.filter((d) => d.id !== activeDepartmentId);
+  if (otherDepts.length === 0) return;
+  const dept = otherDepts[backgroundIndex % otherDepts.length];
+  backgroundIndex++;
+  try {
+    await syncDepartmentFromCloud(dept.id);
   } catch {}
-}, 1500);
+}, 4000);
+
+// 3. Initial pre-load on startup across all departments in parallel directly from live cloud
+Promise.all(
+  DEPARTMENTS.map((dept) =>
+    syncDepartmentFromCloud(dept.id).catch(() => {})
+  )
+);
 
 const router = express.Router();
 
@@ -168,10 +119,11 @@ const router = express.Router();
 router.get('/events', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
+    'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
   });
-  res.write('\n');
+  res.write(': connected\n\n');
   sseClients.add(res);
 
   const cleanup = () => sseClients.delete(res);
@@ -192,33 +144,20 @@ router.get('/departments', (req, res) => {
   res.json(list);
 });
 
-// Returns parsed dashboard: serves instantly from memory or fresh in ~300ms
+// Returns parsed dashboard: ALWAYS instantaneous (0ms) from memory cache
 router.get('/departments/:id/dashboard', async (req, res) => {
   try {
     const deptId = req.params.id;
-    const dept = DEPARTMENTS.find((d) => d.id === deptId);
-    const forceRefresh = req.query.refresh === 'true';
-    const cached = serverCache.get(deptId);
+    activeDepartmentId = deptId;
+    let cached = serverCache.get(deptId);
 
-    // Check local file mtime
-    let currentMtime = 0;
-    if (dept) {
-      const localFile = findLocalWorkbook(dept.fileName || dept.id);
-      if (localFile && fs.existsSync(localFile)) {
-        try {
-          currentMtime = fs.statSync(localFile).mtimeMs;
-        } catch {}
-      }
-    }
-
-    // If cached within last 800ms and file unchanged, respond immediately (0ms)
-    if (!forceRefresh && cached && (Date.now() - cached.timestamp < 800) && (currentMtime === 0 || cached.mtimeMs === currentMtime)) {
+    if (cached) {
       return res.json(cached.data);
     }
 
-    // Fetch fresh
-    const data = await fetchAndParseDepartment(deptId);
-    res.json(data);
+    // If cold start, fetch from live cloud stream
+    const data = await syncDepartmentFromCloud(deptId);
+    return res.json(data);
   } catch (e) {
     const cached = serverCache.get(req.params.id);
     if (cached) {

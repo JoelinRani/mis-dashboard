@@ -89,10 +89,16 @@ export class ChartPanelComponent implements AfterViewInit, OnChanges, OnDestroy 
       hoverOffset: isPie ? 6 : 0,
     }));
 
-    // If chart instance already exists and is same type, update in place with zero flicker
+    // If chart instance already exists and is same type, only update if data actually changed
     const currentType = (this.chartInstance?.config as any)?.type;
     const targetType = isPie ? 'pie' : 'bar';
     if (this.chartInstance && currentType === targetType) {
+      const labelsUnchanged = JSON.stringify(this.chartInstance.data.labels) === JSON.stringify(this.chart.labels);
+      const dataUnchanged = JSON.stringify(this.chartInstance.data.datasets.map(d => ({ l: d.label, data: d.data }))) ===
+                            JSON.stringify(datasets.map(d => ({ l: d.label, data: d.data })));
+      if (labelsUnchanged && dataUnchanged) {
+        return;
+      }
       this.chartInstance.data.labels = this.chart.labels;
       this.chartInstance.data.datasets = datasets;
       this.chartInstance.update('none');
