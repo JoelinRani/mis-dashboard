@@ -74,7 +74,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let r of displayedModalRecords">
-              <td *ngFor="let col of modalColumns">
+              <td *ngFor="let col of modalColumns" [class.wrap-cell]="isWrapCol(col)">
                 <app-status-pill *ngIf="isStatusCol(col) && r[col]; else plainVal" [value]="r[col]"></app-status-pill>
                 <ng-template #plainVal>{{ formatCell(r[col], col) }}</ng-template>
               </td>

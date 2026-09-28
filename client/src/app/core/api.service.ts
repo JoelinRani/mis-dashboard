@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, NgZone } from '@angular/core';
+import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { DashboardData, DepartmentSummary } from './models';
 
@@ -9,7 +9,25 @@ export class ApiService {
   private readonly baseUrl = '/api';
   private dashboardCache = new Map<string, DashboardData>();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private zone: NgZone) {
+    this.prefetchAll();
+  }
+
+  prefetchAll(): void {
+    this.getDepartments().subscribe({
+      next: (departments) => {
+        for (const dept of departments) {
+          if (dept.id) {
+            this.getDashboard(dept.id, false).subscribe({
+              next: () => {},
+              error: () => {}
+            });
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
 
   getDepartments(): Observable<DepartmentSummary[]> {
     return this.http.get<DepartmentSummary[]>(`${this.baseUrl}/departments`);
@@ -35,13 +53,15 @@ export class ApiService {
       try {
         es = new EventSource(`${this.baseUrl}/events`);
         es.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            observer.next(data);
-          } catch {}
+          this.zone.run(() => {
+            try {
+              const data = JSON.parse(event.data);
+              observer.next(data);
+            } catch {}
+          });
         };
         es.onerror = () => {
-          // Reconnect handled automatically by browser EventSource
+          // Automatic browser reconnection
         };
       } catch (e) {
         observer.error(e);
