@@ -26,12 +26,12 @@
 
   <!-- Interactive KPI Metric Cards -->
   <section class="kpi-grid">
-    <app-kpi-card *ngFor="let k of data.kpis" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>
+    <app-kpi-card *ngFor="let k of data.kpis; trackBy: trackByKpi" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>
   </section>
 
   <!-- Interactive Charts Grid -->
   <section class="chart-grid">
-    <app-chart-panel *ngFor="let c of data.charts" [chart]="c" (sliceClick)="onChartSliceClick($event)"
+    <app-chart-panel *ngFor="let c of data.charts; trackBy: trackByChart" [chart]="c" (sliceClick)="onChartSliceClick($event)"
       (chartClick)="onChartClick($event)"></app-chart-panel>
   </section>
 

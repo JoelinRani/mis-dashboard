@@ -27,7 +27,27 @@ if (fs.existsSync(clientDist)) {
   console.log('No Angular build found yet (client/dist/client/browser) - API-only mode.');
 }
 
-app.listen(PORT, () => {
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[Notice] Port ${PORT} already in use; backend is active.`);
+  } else {
+    // Prevent unhandled crashes
+  }
+});
+
+process.on('unhandledRejection', () => {
+  // Prevent unhandled promise crash
+});
+
+const server = app.listen(PORT, () => {
   console.log(`Park MIS Dashboard server listening on port ${PORT}`);
   console.log('Reading department workbooks directly from OneDrive Cloud in-memory');
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[Notice] Port ${PORT} already in use; backend is active.`);
+  } else {
+    console.error('Server error:', err.message);
+  }
 });

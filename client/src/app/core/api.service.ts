@@ -20,12 +20,36 @@ export class ApiService {
   }
 
   getDashboard(departmentId: string, forceRefresh = false): Observable<DashboardData> {
+    const ts = Date.now();
     const url = forceRefresh
-      ? `${this.baseUrl}/departments/${departmentId}/dashboard?refresh=true`
-      : `${this.baseUrl}/departments/${departmentId}/dashboard`;
+      ? `${this.baseUrl}/departments/${departmentId}/dashboard?refresh=true&_ts=${ts}`
+      : `${this.baseUrl}/departments/${departmentId}/dashboard?_ts=${ts}`;
     return this.http.get<DashboardData>(url).pipe(
       tap((data) => this.dashboardCache.set(departmentId, data))
     );
+  }
+
+  subscribeToEvents(): Observable<{ type: string; departmentId: string; timestamp: number }> {
+    return new Observable((observer) => {
+      let es: EventSource | null = null;
+      try {
+        es = new EventSource(`${this.baseUrl}/events`);
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            observer.next(data);
+          } catch {}
+        };
+        es.onerror = () => {
+          // Reconnect handled automatically by browser EventSource
+        };
+      } catch (e) {
+        observer.error(e);
+      }
+      return () => {
+        if (es) es.close();
+      };
+    });
   }
 
   clearCache(departmentId?: string): void {
