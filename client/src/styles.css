@@ -31,7 +31,7 @@
   --status-critical: #d8322c;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
@@ -60,7 +60,7 @@
     --status-serious-text: #ff8163;
     --status-critical: #ef4a44;
   }
-}
+} */
 
 html,
 body {
