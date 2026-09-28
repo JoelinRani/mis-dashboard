@@ -24,6 +24,7 @@ function parseMarketing(existingWb = null) {
 
   const records = rows
     .map((r) => ({
+      month: cleanStr(r['Month']) || cleanStr(r['Date']),
       client: cleanStr(r['Client']),
       county: cleanStr(r['County']),
       state: cleanStr(r['State']),

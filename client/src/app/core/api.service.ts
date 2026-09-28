@@ -3,10 +3,11 @@ import { Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { DashboardData, DepartmentSummary } from './models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private readonly baseUrl = '/api';
+  private readonly baseUrl = environment.apiUrl;
   private dashboardCache = new Map<string, DashboardData>();
 
   constructor(private http: HttpClient, private zone: NgZone) {
