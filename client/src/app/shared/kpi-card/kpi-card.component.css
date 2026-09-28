@@ -17,7 +17,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 8px;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  transition: border-color 0.15s ease;
   position: relative;
   box-sizing: border-box;
   overflow: hidden;
@@ -29,10 +29,9 @@
   user-select: none;
 }
 
-.kpi-card.clickable:hover {
-  transform: translateY(-3px);
-  border-color: var(--accent);
-  box-shadow: 0 10px 22px var(--surface-shadow-strong);
+.kpi-card.clickable:hover,
+.kpi-card:hover {
+  border-color: #2563eb;
 }
 
 .kpi-card.clickable:focus-visible {

@@ -69,7 +69,6 @@ export class ChartPanelComponent implements AfterViewInit, OnChanges, OnDestroy 
 
   private render(): void {
     if (!this.canvasRef || this.isEmpty) return;
-    this.chartInstance?.destroy();
 
     const palette = categoricalPalette();
     const isPie = this.chart.type === 'pie';
@@ -90,14 +89,37 @@ export class ChartPanelComponent implements AfterViewInit, OnChanges, OnDestroy 
       hoverOffset: isPie ? 6 : 0,
     }));
 
+    // If chart instance already exists and is same type, update in place with zero flicker
+    const currentType = (this.chartInstance?.config as any)?.type;
+    const targetType = isPie ? 'pie' : 'bar';
+    if (this.chartInstance && currentType === targetType) {
+      this.chartInstance.data.labels = this.chart.labels;
+      this.chartInstance.data.datasets = datasets;
+      this.chartInstance.update('none');
+      return;
+    }
+
+    this.chartInstance?.destroy();
+
     const config: ChartConfiguration = {
       type: isPie ? 'pie' : 'bar',
       data: { labels: this.chart.labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        resizeDelay: 150,
+        resizeDelay: 0,
         animation: false,
+        transitions: {
+          active: {
+            animation: {
+              duration: 0,
+            },
+          },
+        },
+        hover: {
+          mode: 'nearest',
+          intersect: true,
+        },
         onClick: (_event, elements) => {
           if (elements && elements.length > 0) {
             const el = elements[0];
@@ -140,7 +162,6 @@ export class ChartPanelComponent implements AfterViewInit, OnChanges, OnDestroy 
             callbacks: {
               afterBody: () => 'Click to open detailed records pop-up',
             },
-
           },
         },
         scales: isPie

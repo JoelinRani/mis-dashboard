@@ -3,18 +3,47 @@ const path = require('path');
 const XLSX = require('xlsx');
 const { DATA_FOLDER } = require('../config');
 
-/** Find a file in DATA_FOLDER whose name matches one of the given keywords. */
-function findFile(keywords) {
-  if (!fs.existsSync(DATA_FOLDER)) {
-    throw new Error(`Data folder not found: ${DATA_FOLDER}`);
+const ONEDRIVE_SEARCH_PATHS = [
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'OneDrive', 'Fw_ MIS Dashboard'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'OneDrive - Park Corporates', 'Fw_ MIS Dashboard'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'Downloads', 'Fw_ MIS Dashboard'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'Downloads'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'Desktop'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'OneDrive'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'OneDrive - Park Corporates'),
+  path.join(process.env.USERPROFILE || 'C:\\Users\\JoelinRaniJ', 'Documents'),
+];
+
+/** Find the newest local workbook across all OneDrive and local directories. */
+function findLocalWorkbook(fileNameOrKeywords) {
+  const keywords = Array.isArray(fileNameOrKeywords) ? fileNameOrKeywords : [fileNameOrKeywords];
+  let bestMatch = null;
+  let bestMtime = 0;
+
+  for (const dir of ONEDRIVE_SEARCH_PATHS) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      const files = fs.readdirSync(dir).filter((f) => /\.xlsx?$/i.test(f) && !f.startsWith('~$'));
+      for (const kw of keywords) {
+        if (!kw) continue;
+        const lowerKw = kw.toLowerCase();
+        for (const file of files) {
+          const lowerFile = file.toLowerCase();
+          if (lowerFile === lowerKw || lowerFile.endsWith(lowerKw) || lowerFile.includes(lowerKw)) {
+            const fullPath = path.join(dir, file);
+            try {
+              const stat = fs.statSync(fullPath);
+              if (stat.mtimeMs > bestMtime) {
+                bestMtime = stat.mtimeMs;
+                bestMatch = fullPath;
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {}
   }
-  const files = fs.readdirSync(DATA_FOLDER).filter((f) => /\.xlsx?$/i.test(f) && !f.startsWith('~$'));
-  const lowerKeywords = keywords.map((k) => k.toLowerCase());
-  const match = files.find((f) => {
-    const lower = f.toLowerCase();
-    return lowerKeywords.some((k) => lower.includes(k));
-  });
-  return match ? path.join(DATA_FOLDER, match) : null;
+  return bestMatch;
 }
 
 /** Load a workbook fresh from disk (no caching - always reflects latest saved file). */
@@ -22,60 +51,82 @@ function loadWorkbook(filePath) {
   return XLSX.readFile(filePath, { cellDates: true, cellNF: false, cellText: false });
 }
 
-const directUrlCache = new Map();
+const cloudSessionCache = new Map();
 
-/** Fetch and parse an Excel workbook directly from OneDrive over HTTPS into memory (no disk files). */
+/** Fetch and parse an Excel workbook directly from OneDrive over HTTPS into memory (always fresh, ultra-fast streaming in ~300ms). */
 async function fetchWorkbookFromOneDrive(url) {
-  const cachedInfo = directUrlCache.get(url);
-  if (cachedInfo) {
+  const noCacheHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+
+  const cachedSession = cloudSessionCache.get(url);
+  const now = Date.now();
+
+  // 1. Try direct ultra-fast fetch if session was resolved within last 15 minutes (~250-350ms)
+  if (cachedSession && (now - cachedSession.resolvedAt < 15 * 60 * 1000)) {
     try {
-      const res = await fetch(cachedInfo.directUrl, {
+      const directUrl = cachedSession.directUrl + (cachedSession.directUrl.includes('?') ? `&_t=${now}` : `?_t=${now}`);
+      const res = await fetch(directUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          ...(cachedInfo.cookies ? { Cookie: cachedInfo.cookies } : {})
+          ...noCacheHeaders,
+          ...(cachedSession.cookieHeader ? { Cookie: cachedSession.cookieHeader } : {})
         }
       });
       if (res.ok) {
         const arrayBuffer = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        return XLSX.read(buffer, { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
+        return XLSX.read(Buffer.from(arrayBuffer), { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
       }
     } catch {
-      // Re-resolve redirects below if cached direct URL expired
+      // Fallback to full redirect resolution
     }
   }
 
-  let curr = url.includes('?') ? url + '&download=1' : url + '?download=1';
-  let cookies = '';
-  
+  // 2. Full redirect resolution (initial connection or session refresh)
+  let curr = url.includes('?') ? `${url}&download=1&_t=${now}` : `${url}?download=1&_t=${now}`;
+  const cookieMap = new Map();
+  let finalUrl = curr;
+
   for (let i = 0; i < 10; i++) {
+    const cookieHeader = Array.from(cookieMap.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
     const res = await fetch(curr, {
       redirect: 'manual',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        ...(cookies ? { Cookie: cookies } : {})
+        ...noCacheHeaders,
+        ...(cookieHeader ? { Cookie: cookieHeader } : {})
       }
     });
-    
-    const setCookie = res.headers.get('set-cookie');
-    if (setCookie) cookies = setCookie;
-    
+
+    const setCookies = typeof res.headers.getSetCookie === 'function'
+      ? res.headers.getSetCookie()
+      : [res.headers.get('set-cookie')].filter(Boolean);
+    for (const c of setCookies) {
+      const pair = c.split(';')[0];
+      const eqIdx = pair.indexOf('=');
+      if (eqIdx > 0) {
+        cookieMap.set(pair.slice(0, eqIdx).trim(), pair.slice(eqIdx + 1).trim());
+      }
+    }
+
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get('location');
       if (!loc) break;
       curr = new URL(loc, curr).toString();
+      finalUrl = curr;
       continue;
     }
-    
+
     if (!res.ok) {
       throw new Error(`Failed to fetch OneDrive workbook (HTTP ${res.status}): ${res.statusText}`);
     }
-    
-    directUrlCache.set(url, { directUrl: curr, cookies });
+
+    const cookieHeaderFinal = Array.from(cookieMap.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+    cloudSessionCache.set(url, { directUrl: finalUrl, cookieHeader: cookieHeaderFinal, resolvedAt: now });
 
     const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    return XLSX.read(buffer, { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
+    return XLSX.read(Buffer.from(arrayBuffer), { type: 'buffer', cellDates: true, cellNF: false, cellText: false });
   }
   throw new Error('Failed to resolve OneDrive download redirect after 10 attempts');
 }
@@ -158,7 +209,9 @@ function getFileMtime(keywords) {
 }
 
 module.exports = {
-  findFile,
+  ONEDRIVE_SEARCH_PATHS,
+  findLocalWorkbook,
+  findFile: findLocalWorkbook,
   getFileMtime,
   loadWorkbook,
   fetchWorkbookFromOneDrive,

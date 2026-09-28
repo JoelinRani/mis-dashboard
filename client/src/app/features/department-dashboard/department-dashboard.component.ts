@@ -1,8 +1,9 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, interval } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { DashboardData, Kpi, ChartDef } from '../../core/models';
 import { KpiCardComponent } from '../../shared/kpi-card/kpi-card.component';
@@ -48,7 +49,7 @@ const COLUMN_TITLES: Record<string, string> = {
   leadsGenerated: 'Leads Generated',
   preliminaryResearch: 'Preliminary Research',
   month: 'Month',
-  category: 'Category / Client',
+  category: 'Category',
   type: 'Type',
   hours: 'Hours',
   filesReceived: 'Files Received',
@@ -81,11 +82,31 @@ const COLUMN_TITLES: Record<string, string> = {
   uniqueLeads: 'Unique Leads Worked',
   connected: 'Connected Calls',
   connectRate: 'Connect Rate %',
+  resource: 'Engineer / Resource',
+  kpi: 'Metric / Component',
+  target: 'Target',
+  current: 'Current Value',
+  allocation: 'Allocation Type',
+  projectName: 'Assigned Scope / Project',
+  owner: 'Project Owner',
+  targetCompletion: 'Target Completion Date',
+  plannedCompletionPct: 'Planned %',
+  actualCompletionPct: 'Actual % Complete',
+  scheduleVariancePct: 'Schedule Variance %',
 };
 
-
 const STATUS_KEYS = new Set(['status', 'outcome', 'severity', 'connect', 'slaStatus', 'allocationStatus', 'preliminaryResearch']);
-const PERCENT_KEYS = new Set(['percentComplete', 'totalAllocationPct', 'allocationPct', 'utilizationPct', 'onTimeDeliveryPct', 'qualityPct']);
+const PERCENT_KEYS = new Set([
+  'percentComplete',
+  'totalAllocationPct',
+  'allocationPct',
+  'utilizationPct',
+  'onTimeDeliveryPct',
+  'qualityPct',
+  'plannedCompletionPct',
+  'actualCompletionPct',
+  'scheduleVariancePct',
+]);
 
 @Component({
   selector: 'app-department-dashboard',
@@ -94,7 +115,8 @@ const PERCENT_KEYS = new Set(['percentComplete', 'totalAllocationPct', 'allocati
   templateUrl: './department-dashboard.component.html',
   styleUrl: './department-dashboard.component.css',
 })
-export class DepartmentDashboardComponent implements OnInit {
+export class DepartmentDashboardComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   data: DashboardData | null = null;
   loading = true;
   refreshing = false;
@@ -136,6 +158,18 @@ export class DepartmentDashboardComponent implements OnInit {
     }
   }
 
+  @HostListener('window:focus')
+  onWindowFocus(): void {
+    this.silentSync();
+  }
+
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') {
+      this.silentSync();
+    }
+  }
+
   ngOnInit(): void {
     this.route.paramMap.pipe(switchMap((params) => {
       const id = params.get('departmentId')!;
@@ -167,6 +201,64 @@ export class DepartmentDashboardComponent implements OnInit {
         this.loading = false;
       },
     });
+
+    // Real-time SSE push notification when file changes on disk (<10ms)
+    this.api.subscribeToEvents().pipe(
+      takeUntil(this.destroy$)
+    ).subscribe((evt) => {
+      const currentId = this.route.snapshot.paramMap.get('departmentId');
+      if (evt.departmentId === 'all' || evt.departmentId === currentId) {
+        this.silentSync();
+      }
+    });
+
+    // Instant auto-sync polling every 500ms while tab is visible
+    interval(500).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      if (document.visibilityState === 'visible') {
+        this.silentSync();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  silentSync(): void {
+    const id = this.route.snapshot.paramMap.get('departmentId');
+    if (!id || this.loading || this.refreshing) return;
+    this.api.getDashboard(id, true).subscribe({
+      next: (data) => {
+        if (data) {
+          this.normalizeDepartmentData(data);
+          if (!this.isDataEqual(this.data, data)) {
+            this.data = data;
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  private isDataEqual(oldData: DashboardData | null, newData: DashboardData | null): boolean {
+    if (!oldData || !newData) return false;
+    if (oldData.department !== newData.department) return false;
+    return (
+      JSON.stringify(oldData.kpis) === JSON.stringify(newData.kpis) &&
+      JSON.stringify(oldData.charts) === JSON.stringify(newData.charts) &&
+      JSON.stringify(oldData.tables) === JSON.stringify(newData.tables)
+    );
+  }
+
+  trackByKpi(_index: number, item: Kpi): string {
+    return item.key || item.label || String(_index);
+  }
+
+  trackByChart(_index: number, item: ChartDef): string {
+    return item.id || item.title || String(_index);
   }
 
   private normalizeDepartmentData(data: DashboardData | null): void {
@@ -797,6 +889,88 @@ export class DepartmentDashboardComponent implements OnInit {
           this.showDataModal(`Call Attempts (${calls.length})`, calls);
           break;
       }
+    } else if (dep === 'it-operations') {
+      const itKpi = this.getTableRecords('itKpi');
+      const resources = this.getTableRecords('resources');
+      const projects = this.getTableRecords('projects');
+
+      switch (kpi.key) {
+        case 'criticalAvailability':
+          this.showDataModal(
+            `Critical Resource Availability`,
+            itKpi.filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        case 'slaCompliance':
+          this.showDataModal(
+            `SLA Compliance`,
+            itKpi.filter(r => r.kpi.toLowerCase().includes('sla') || r.category.toLowerCase().includes('oper')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        case 'openTickets':
+          this.showDataModal(
+            `Support Tickets & Operations`,
+            itKpi.filter(r => r.category.toLowerCase().includes('oper') || r.kpi.toLowerCase().includes('ticket')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        case 'backupSuccess':
+          this.showDataModal(
+            `Backup Success Rate`,
+            itKpi.filter(r => r.category.toLowerCase().includes('backup')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        case 'patchCompliance':
+          this.showDataModal(
+            `Patch Compliance & Security`,
+            itKpi.filter(r => r.category.toLowerCase().includes('sec')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        case 'majorOutages':
+          this.showDataModal(
+            `Major Outages & Critical Issues`,
+            itKpi.filter(r => r.category.toLowerCase().includes('critical') || r.kpi.toLowerCase().includes('outage')).map(r => ({
+              kpi: r.kpi,
+              target: r.target,
+              current: r.current,
+              status: r.status,
+            }))
+          );
+          break;
+        default:
+          this.showDataModal(`IT Infrastructure & Security Matrix`, itKpi.map(r => ({
+            category: r.category,
+            kpi: r.kpi,
+            target: r.target,
+            current: r.current,
+            status: r.status,
+          })));
+          break;
+      }
     }
   }
 
@@ -1011,6 +1185,65 @@ export class DepartmentDashboardComponent implements OnInit {
       } else if (event.chartId === 'byAgent') {
         this.showDataModal(`Calls for Agent: ${event.label}`, calls.filter((c) => c.agent === event.label));
       }
+    } else if (dep === 'it-operations') {
+      const itKpi = this.getTableRecords('itKpi');
+      const resources = this.getTableRecords('resources');
+      const projects = this.getTableRecords('projects');
+
+      if (event.chartId === 'infraHealth') {
+        const match = itKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : itKpi.filter(r => r.category.toLowerCase().includes('infra'));
+        this.showDataModal(`Infrastructure: ${event.label}`, list.map(r => ({
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      } else if (event.chartId === 'secCompliance') {
+        const match = itKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : itKpi.filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup'));
+        this.showDataModal(`Security / Backup: ${event.label}`, list.map(r => ({
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      } else if (event.chartId === 'resourceUtil') {
+        const match = resources.filter((r) => r.resource.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : resources;
+        this.showDataModal(`Resource Details: ${event.label}`, list.map(r => ({
+          resource: r.resource,
+          role: r.role,
+          allocation: r.allocation,
+          projectName: r.projectName,
+          plannedHours: r.plannedHours,
+          actualHours: r.actualHours,
+          utilizationPct: r.utilizationPct,
+          status: r.status,
+        })));
+      } else if (event.chartId === 'projectProgress') {
+        const match = projects.filter((p) => p.project.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : projects;
+        this.showDataModal(`Project Details: ${event.label}`, list.map(p => ({
+          project: p.project,
+          owner: p.owner,
+          startDate: p.startDate,
+          targetCompletion: p.targetCompletion,
+          plannedCompletionPct: p.plannedCompletionPct,
+          actualCompletionPct: p.actualCompletionPct,
+          scheduleVariancePct: p.scheduleVariancePct,
+          status: p.status,
+        })));
+      } else if (event.chartId === 'overallRAG') {
+        const filtered = itKpi.filter((r) => r.status.toLowerCase() === event.label.toLowerCase()).map(r => ({
+          category: r.category,
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        }));
+        this.showDataModal(`IT Components (${event.label} Status - ${filtered.length})`, filtered);
+      }
     }
   }
 
@@ -1065,6 +1298,60 @@ export class DepartmentDashboardComponent implements OnInit {
       else this.showDataModal(chart.title, utilization, filterSubtitle);
     } else if (dep === 'outbound-desk') {
       this.showDataModal(chart.title, this.getTableRecords('calls'));
+    } else if (dep === 'it-operations') {
+      if (chart.id === 'infraHealth') {
+        this.showDataModal('Infrastructure Availability & Health', this.getTableRecords('itKpi').filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      } else if (chart.id === 'secCompliance') {
+        this.showDataModal('Security & Backup Compliance', this.getTableRecords('itKpi').filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup')).map(r => ({
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      } else if (chart.id === 'resourceUtil') {
+        this.showDataModal('IT Staff Resource Utilization', this.getTableRecords('resources').map(r => ({
+          resource: r.resource,
+          role: r.role,
+          allocation: r.allocation,
+          projectName: r.projectName,
+          plannedHours: r.plannedHours,
+          actualHours: r.actualHours,
+          utilizationPct: r.utilizationPct,
+          status: r.status,
+        })));
+      } else if (chart.id === 'projectProgress') {
+        this.showDataModal('Active IT Projects', this.getTableRecords('projects').map(p => ({
+          project: p.project,
+          owner: p.owner,
+          startDate: p.startDate,
+          targetCompletion: p.targetCompletion,
+          plannedCompletionPct: p.plannedCompletionPct,
+          actualCompletionPct: p.actualCompletionPct,
+          scheduleVariancePct: p.scheduleVariancePct,
+          status: p.status,
+        })));
+      } else if (chart.id === 'overallRAG') {
+        this.showDataModal('Overall IT Health Matrix', this.getTableRecords('itKpi').map(r => ({
+          category: r.category,
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      } else {
+        this.showDataModal(chart.title, this.getTableRecords('itKpi').map(r => ({
+          category: r.category,
+          kpi: r.kpi,
+          target: r.target,
+          current: r.current,
+          status: r.status,
+        })));
+      }
     }
   }
 

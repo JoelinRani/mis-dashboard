@@ -2,7 +2,7 @@ const { sheetToGrid, toNumber, toPercent, cleanStr, toISODate } = require('../ut
 
 /**
  * Weekly IT MIS & Operations Dashboard parser.
- * Reads:
+ * Reads live data from:
  * 1. MD Dashboard (core KPIs and high-level summaries)
  * 2. IT KPI (Infrastructure, Security, Operations, Backup, Critical Issues)
  * 3. Project KPI (Active IT projects progress and status)
@@ -30,8 +30,15 @@ function parseItOperations(existingWb = null) {
 
       if (firstCell === 'KPI' || firstCell === 'Project Name') continue;
 
-      const target = typeof row[1] === 'number' ? toPercent(row[1]) + '%' : cleanStr(row[1]);
-      const current = typeof row[2] === 'number' ? (row[2] <= 1 && row[2] > 0 ? toPercent(row[2]) + '%' : row[2]) : cleanStr(row[2]);
+      let target = cleanStr(row[1]);
+      if (typeof row[1] === 'number') {
+        target = row[1] <= 1 && row[1] > 0 ? toPercent(row[1]) + '%' : String(row[1]);
+      }
+
+      let current = cleanStr(row[2]);
+      if (typeof row[2] === 'number') {
+        current = row[2] <= 1 && row[2] > 0 ? toPercent(row[2]) + '%' : String(row[2]);
+      }
       const status = cleanStr(row[3]);
 
       if (firstCell && (target || current || status)) {
@@ -90,17 +97,55 @@ function parseItOperations(existingWb = null) {
     }
   }
 
-  // --- Core KPIs ---
+  // --- 4. Dynamic MD Dashboard & Core KPIs ---
+  const mdSheet = wb.Sheets['MD Dashboard'];
+  let criticalAvailability = 94.8;
+  let slaCompliance = 100;
+  let backupSuccess = 100;
+  let openTickets = 10;
+  let patchCompliance = 90.2;
+  let majorOutages = 0;
+  let corpUtil = 82.5;
+  let billableUtil = 100;
+
+  if (mdSheet) {
+    const grid = sheetToGrid(mdSheet);
+    for (const row of grid) {
+      const kpiName = cleanStr(row[0]);
+      if (!kpiName) continue;
+      const rawVal = row[2]; // Column C (index 2) is "Actual"
+      if (rawVal !== undefined && rawVal !== null) {
+        if (/Critical Resource Availability/i.test(kpiName)) {
+          criticalAvailability = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 94.8)) : toNumber(rawVal, 94.8);
+        } else if (/Major Outages/i.test(kpiName)) {
+          majorOutages = toNumber(rawVal, 0);
+        } else if (/SLA Compliance/i.test(kpiName)) {
+          slaCompliance = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 100)) : toNumber(rawVal, 100);
+        } else if (/Open Tickets/i.test(kpiName)) {
+          openTickets = toNumber(rawVal, 10);
+        } else if (/Patch Compliance/i.test(kpiName)) {
+          patchCompliance = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 90.2)) : toNumber(rawVal, 90.2);
+        } else if (/Backup Success/i.test(kpiName)) {
+          backupSuccess = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 100)) : toNumber(rawVal, 100);
+        } else if (/Corporate IT Utilization/i.test(kpiName)) {
+          corpUtil = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 82.5)) : toNumber(rawVal, 82.5);
+        } else if (/Billable Resource Utilization/i.test(kpiName)) {
+          billableUtil = typeof rawVal === 'number' ? (rawVal <= 1 ? toPercent(rawVal) : toNumber(rawVal, 100)) : toNumber(rawVal, 100);
+        }
+      }
+    }
+  }
+
   const kpis = [
-    { key: 'criticalAvailability', label: 'Critical Resource Availability', value: 94.8, format: 'percent' },
-    { key: 'slaCompliance', label: 'SLA Compliance', value: 100, format: 'percent' },
-    { key: 'backupSuccess', label: 'Backup Success Rate', value: 100, format: 'percent' },
-    { key: 'openTickets', label: 'Open Support Tickets', value: 8, format: 'number' },
-    { key: 'patchCompliance', label: 'Patch Compliance', value: 90.2, format: 'percent' },
-    { key: 'majorOutages', label: 'Major Outages', value: 0, format: 'number' },
+    { key: 'criticalAvailability', label: 'Critical Resource Availability', value: criticalAvailability, format: 'percent' },
+    { key: 'slaCompliance', label: 'SLA Compliance', value: slaCompliance, format: 'percent' },
+    { key: 'backupSuccess', label: 'Backup Success Rate', value: backupSuccess, format: 'percent' },
+    { key: 'openTickets', label: 'Open Support Tickets', value: openTickets, format: 'number' },
+    { key: 'patchCompliance', label: 'Patch Compliance', value: patchCompliance, format: 'percent' },
+    { key: 'majorOutages', label: 'Major Outages', value: majorOutages, format: 'number' },
   ];
 
-  // --- Interactive Charts ---
+  // --- Dynamic Charts across all sheets ---
   const infraItems = itKpiRecords.filter((r) => r.category.toLowerCase().includes('infra'));
   const infraLabels = infraItems.map((r) => r.kpi);
   const infraValues = infraItems.map((r) => {
@@ -108,12 +153,17 @@ function parseItOperations(existingWb = null) {
     return isNaN(num) ? 100 : num;
   });
 
-  const secItems = itKpiRecords.filter((r) => r.category.toLowerCase().includes('sec'));
-  const secLabels = secItems.filter((r) => !isNaN(parseFloat(r.current))).map((r) => r.kpi);
-  const secValues = secItems.filter((r) => !isNaN(parseFloat(r.current))).map((r) => parseFloat(r.current));
+  const secItems = itKpiRecords.filter((r) => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup'));
+  const secNumeric = secItems.filter((r) => !isNaN(parseFloat(r.current)));
+  const secLabels = secNumeric.map((r) => r.kpi);
+  const secValues = secNumeric.map((r) => parseFloat(r.current));
 
   const resourceLabels = resourceRecords.map((r) => r.resource);
   const resourceValues = resourceRecords.map((r) => r.utilizationPct || 0);
+
+  const projectLabels = projectRecords.map((r) => r.project);
+  const projectPlanned = projectRecords.map((r) => r.plannedCompletionPct || 0);
+  const projectActual = projectRecords.map((r) => r.actualCompletionPct || 0);
 
   const statusCounts = {};
   itKpiRecords.forEach((r) => {
@@ -131,10 +181,10 @@ function parseItOperations(existingWb = null) {
     },
     {
       id: 'secCompliance',
-      title: 'Security & Compliance Scores %',
+      title: 'Security & Backup Compliance Scores %',
       type: 'bar',
-      labels: secLabels.length ? secLabels : ['Defender Secure Score', 'MFA Compliance', 'Patch Compliance', 'Endpoint Protection'],
-      series: [{ name: 'Compliance %', data: secValues.length ? secValues : [100, 100, 90.2, 81.8] }],
+      labels: secLabels.length ? secLabels : ['Defender Secure Score', 'MFA Compliance', 'Patch Compliance', 'Endpoint Protection', 'Backup Success'],
+      series: [{ name: 'Compliance %', data: secValues.length ? secValues : [100, 100, 90.2, 81.8, 100] }],
     },
     {
       id: 'resourceUtil',
@@ -142,6 +192,16 @@ function parseItOperations(existingWb = null) {
       type: 'bar',
       labels: resourceLabels.length ? resourceLabels : ['Md. Shihab', 'Karthick', 'Hari'],
       series: [{ name: 'Utilization %', data: resourceValues.length ? resourceValues : [100, 80, 85] }],
+    },
+    {
+      id: 'projectProgress',
+      title: 'Active IT Projects Completion %',
+      type: 'bar',
+      labels: projectLabels.length ? projectLabels : ['RGPC Managed Service'],
+      series: [
+        { name: 'Planned %', data: projectPlanned.length ? projectPlanned : [60] },
+        { name: 'Actual %', data: projectActual.length ? projectActual : [60] },
+      ],
     },
     {
       id: 'overallRAG',
@@ -163,7 +223,7 @@ function parseItOperations(existingWb = null) {
     tables: [
       {
         key: 'itKpi',
-        label: 'IT Infrastructure & Security Matrix',
+        label: 'IT Infrastructure, Security & Operations Matrix',
         dimensions: [
           { key: 'category', label: 'Category' },
           { key: 'kpi', label: 'Metric / Component' },
@@ -195,10 +255,12 @@ function parseItOperations(existingWb = null) {
         label: 'IT Projects & Initiatives',
         dimensions: [
           { key: 'project', label: 'Project Name' },
-          { key: 'owner', label: 'Owner' },
+          { key: 'owner', label: 'Project Owner' },
           { key: 'startDate', label: 'Start Date' },
-          { key: 'targetCompletion', label: 'Target Date' },
+          { key: 'targetCompletion', label: 'Target Completion' },
+          { key: 'plannedCompletionPct', label: 'Planned Complete %' },
           { key: 'actualCompletionPct', label: 'Actual Complete %' },
+          { key: 'scheduleVariancePct', label: 'Schedule Variance %' },
           { key: 'status', label: 'Status' },
         ],
         metric: { key: null, label: 'Projects', agg: 'count' },

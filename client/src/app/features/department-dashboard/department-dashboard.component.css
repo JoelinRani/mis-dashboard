@@ -74,11 +74,10 @@
   color: white;
   cursor: pointer;
   box-shadow: 0 6px 16px var(--accent-soft-strong);
-  transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+  transition: box-shadow 0.14s ease, opacity 0.14s ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
   box-shadow: 0 8px 20px var(--accent-soft-strong);
 }
 
