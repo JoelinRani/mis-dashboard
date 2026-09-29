@@ -41,13 +41,12 @@ function notifyChange(deptId) {
 }
 
 /**
- * Parses and updates the department cache directly from the live OneDrive Cloud URL in memory.
+ * Parses and updates the department cache 100% directly from live OneDrive Cloud network URLs in memory.
  */
 async function syncDepartmentFromCloud(deptId) {
   const dept = DEPARTMENTS.find((d) => d.id === deptId);
   const parser = PARSERS[deptId];
   if (!dept || !parser) throw new Error(`Unknown department "${deptId}"`);
-
   if (!dept.cloudUrl) throw new Error(`No cloudUrl configured for department "${deptId}"`);
 
   const wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
@@ -64,6 +63,7 @@ async function syncDepartmentFromCloud(deptId) {
 
   data.sourceUrl = dept.cloudUrl;
   data.sourceType = 'cloud';
+  data.sourceFile = dept.fileName || data.sourceFile;
   data.generatedAt = hasChanged ? new Date().toISOString() : (prev?.data?.generatedAt || new Date().toISOString());
 
   serverCache.set(deptId, {
@@ -78,23 +78,29 @@ async function syncDepartmentFromCloud(deptId) {
   return data;
 }
 
-// 1. Ultra-fast continuous live cloud worker: streams the active department every 800ms directly from OneDrive cloud
+let activeWorkerIntervalMs = 3000;
+
+// 1. Continuous live online worker: streams active department from OneDrive network URL with smart WAF backoff
 (async function continuousActiveCloudWorker() {
   while (true) {
     if (activeDepartmentId && !isCloudFetchInProgress) {
       isCloudFetchInProgress = true;
       try {
         await syncDepartmentFromCloud(activeDepartmentId);
-      } catch {}
-      finally {
+        activeWorkerIntervalMs = 3000;
+      } catch (e) {
+        if (e && (String(e.message).includes('WAF') || String(e.message).includes('blocked'))) {
+          activeWorkerIntervalMs = 10000;
+        }
+      } finally {
         isCloudFetchInProgress = false;
       }
     }
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, activeWorkerIntervalMs));
   }
 })();
 
-// 2. Background rotation for other inactive departments
+// 2. Background rotation for other inactive departments from OneDrive network URLs
 let backgroundIndex = 0;
 setInterval(async () => {
   const otherDepts = DEPARTMENTS.filter((d) => d.id !== activeDepartmentId);
@@ -104,9 +110,9 @@ setInterval(async () => {
   try {
     await syncDepartmentFromCloud(dept.id);
   } catch {}
-}, 4000);
+}, 3000);
 
-// 3. Initial pre-load on startup across all departments in parallel directly from live cloud
+// 3. Initial pre-load on startup across all departments in parallel directly from online network URLs
 Promise.all(
   DEPARTMENTS.map((dept) =>
     syncDepartmentFromCloud(dept.id).catch(() => {})
@@ -115,7 +121,7 @@ Promise.all(
 
 const router = express.Router();
 
-// Real-time SSE event stream for instantaneous updates
+// Real-time SSE event stream for instantaneous updates to MD & HODs
 router.get('/events', (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -144,18 +150,23 @@ router.get('/departments', (req, res) => {
   res.json(list);
 });
 
-// Returns parsed dashboard: ALWAYS instantaneous (0ms) from memory cache
+// Returns parsed dashboard: ALWAYS instantaneous (0ms) from RAM cache
 router.get('/departments/:id/dashboard', async (req, res) => {
   try {
     const deptId = req.params.id;
     activeDepartmentId = deptId;
+    const forceRefresh = req.query.refresh === 'true';
     let cached = serverCache.get(deptId);
+
+    if (forceRefresh) {
+      const data = await syncDepartmentFromCloud(deptId);
+      return res.json(data);
+    }
 
     if (cached) {
       return res.json(cached.data);
     }
 
-    // If cold start, fetch from live cloud stream
     const data = await syncDepartmentFromCloud(deptId);
     return res.json(data);
   } catch (e) {
