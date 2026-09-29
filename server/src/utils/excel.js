@@ -6,33 +6,29 @@ function getOneDriveDirectDownloadUrl(url) {
   const match = url.match(/\/c\/([^\/]+)\/([^\/?]+)/);
   if (match) {
     const [, cid, token] = match;
-    return `https://onedrive.live.com/personal/${cid}/_layouts/15/download.aspx?share=${token}&bypasscache=1&forceSave=1`;
+    return `https://onedrive.live.com/personal/${cid}/_layouts/15/download.aspx?share=${token}`;
   }
   return url;
 }
 
-/** Fetch and parse an Excel workbook directly from OneDrive Cloud in memory (~400ms). */
+/** Fetch and parse an Excel workbook directly from OneDrive Cloud in memory with WAF protection. */
 async function fetchWorkbookFromOneDrive(url) {
   const directUrl = getOneDriveDirectDownloadUrl(url);
-  const now = Date.now();
-  const rand = Math.random().toString(36).substring(2, 8);
-  const fetchUrl = directUrl.includes('?')
-    ? `${directUrl}&_t=${now}&_r=${rand}`
-    : `${directUrl}?_t=${now}&_r=${rand}`;
 
-  const res = await fetch(fetchUrl, {
+  const res = await fetch(directUrl, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'X-MS-InvokeApp': '1; RequireReadOnly',
-      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
+      'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream, */*',
     },
   });
 
   if (!res.ok) {
     throw new Error(`Failed to fetch live OneDrive cloud workbook (HTTP ${res.status}): ${res.statusText}`);
+  }
+
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('text/html')) {
+    throw new Error('OneDrive returned HTML instead of Excel binary (WAF rate limit or blocked session)');
   }
 
   const arrayBuffer = await res.arrayBuffer();

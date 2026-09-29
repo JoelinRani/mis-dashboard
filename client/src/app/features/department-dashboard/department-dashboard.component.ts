@@ -237,14 +237,9 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       next: (data) => {
         if (data && data.department === id) {
           this.normalizeDepartmentData(data);
-          // Only update and re-render if data has ACTUALLY changed
           if (!this.isDataEqual(this.data, data)) {
-            this.data = {
-              ...data,
-              kpis: data.kpis ? [...data.kpis.map((k) => ({ ...k }))] : [],
-              charts: data.charts ? [...data.charts.map((c) => ({ ...c, labels: [...(c.labels || [])], series: [...(c.series || []).map((s) => ({ ...s, data: [...s.data] }))] }))] : [],
-              tables: data.tables ? [...data.tables.map((t) => ({ ...t, records: [...(t.records || []).map((r) => ({ ...r }))] }))] : []
-            };
+            this.data = data;
+            this.updateFilterListsKeepSelections();
             this.cdr.markForCheck();
             this.cdr.detectChanges();
           }
@@ -281,6 +276,82 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         defectChart.series = [{ name: 'Defects', data: [0, 0, 0, 0] }];
       }
     }
+  }
+
+  updateFilteredData(): void {
+    if (!this.data) {
+      this.displayedKpis = [];
+      this.displayedCharts = [];
+      return;
+    }
+    if (this.data.department === 'cre-utilization') {
+      this.updateFilteredCreData();
+    } else if (this.data.department === 'marketing') {
+      this.updateFilteredMarketingData();
+    } else {
+      this.displayedKpis = this.data.kpis ? [...this.data.kpis] : [];
+      this.displayedCharts = this.data.charts ? [...this.data.charts] : [];
+    }
+  }
+
+  updateFilterListsKeepSelections(): void {
+    if (!this.data) return;
+
+    if (this.data.department === 'cre-utilization') {
+      const deliverables = this.getTableRecords('deliverables');
+      const utilization = this.getTableRecords('utilization');
+
+      const allMonths = new Set<string>();
+      deliverables.forEach((d) => { if (d.month) allMonths.add(d.month); });
+      utilization.forEach((u) => { if (u.month) allMonths.add(u.month); });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+      this.monthsList = ['All', ...sortedMonths];
+
+      const allClients = new Set<string>();
+      deliverables.forEach((d) => { if (d.client) allClients.add(d.client); });
+      utilization.filter((u) => u.type === 'client').forEach((u) => { if (u.category) allClients.add(u.category); });
+      this.clientsList = ['All', ...[...allClients].sort()];
+
+    } else if (this.data.department === 'marketing') {
+      const leads = this.getTableRecords('leads');
+
+      const allMonths = new Set<string>();
+      const allClients = new Set<string>();
+      const allStates = new Set<string>();
+      const allPropertyTypes = new Set<string>();
+      const allAccountTypes = new Set<string>();
+
+      leads.forEach((l) => {
+        if (l.month) allMonths.add(l.month);
+        if (l.client) allClients.add(l.client);
+        if (l.state) allStates.add(l.state);
+        if (l.propertyType) allPropertyTypes.add(l.propertyType);
+        if (l.accountType) allAccountTypes.add(l.accountType);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.monthsList = sortedMonths.length ? ['All', ...sortedMonths] : ['All', ...monthOrder];
+      this.clientsList = ['All', ...[...allClients].sort()];
+      this.statesList = ['All', ...[...allStates].sort()];
+      this.propertyTypesList = ['All', ...[...allPropertyTypes].sort()];
+      this.accountTypesList = ['All', ...[...allAccountTypes].sort()];
+    }
+
+    this.updateFilteredData();
   }
 
   private initFilterOptionsAndData(): void {
