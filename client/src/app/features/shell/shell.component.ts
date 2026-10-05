@@ -16,10 +16,21 @@ export class ShellComponent implements OnInit {
   loading = true;
   loadError = false;
 
+  isCollapsed = false;
+
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
+    const savedState = localStorage.getItem('sidebar_collapsed');
+    if (savedState !== null) {
+      this.isCollapsed = savedState === 'true';
+    }
     this.load();
+  }
+
+  toggleSidebar(): void {
+    this.isCollapsed = !this.isCollapsed;
+    localStorage.setItem('sidebar_collapsed', String(this.isCollapsed));
   }
 
   load(): void {

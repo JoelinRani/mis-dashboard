@@ -1,0 +1,48 @@
+<div class="dropdown-container" [class.open]="isOpen">
+  <button type="button" class="dropdown-trigger" (click)="toggleOpen($event)" [attr.aria-expanded]="isOpen" [attr.title]="displayText">
+    <span class="dropdown-label" *ngIf="label">{{ label }}:</span>
+    <span class="dropdown-value">{{ displayText }}</span>
+    <span class="count-badge" *ngIf="selectedValues.length > 0 && selectedValues.length < options.length">
+      {{ selectedValues.length }}
+    </span>
+    <svg class="caret-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+
+  <div class="dropdown-menu" *ngIf="isOpen" (click)="$event.stopPropagation()">
+    <div class="dropdown-header">
+      <input
+        *ngIf="options.length > 5"
+        type="text"
+        class="dropdown-search"
+        [placeholder]="'Search ' + (label || 'items') + '...'"
+        [(ngModel)]="searchTerm"
+      />
+      <div class="dropdown-actions">
+        <button type="button" class="action-btn" (click)="selectAll()">Select All</button>
+        <button type="button" class="action-btn" (click)="clearAll()">Clear</button>
+      </div>
+    </div>
+
+    <div class="dropdown-list">
+      <label *ngFor="let opt of filteredOptions" class="dropdown-item" [class.checked]="isSelected(opt)">
+        <input
+          type="checkbox"
+          class="checkbox-input"
+          [checked]="isSelected(opt)"
+          (change)="toggleOption(opt, $event)"
+        />
+        <span class="checkbox-custom">
+          <svg *ngIf="isSelected(opt)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        <span class="item-text">{{ opt }}</span>
+      </label>
+      <div class="empty-list" *ngIf="filteredOptions.length === 0">
+        No matches found
+      </div>
+    </div>
+  </div>
+</div>

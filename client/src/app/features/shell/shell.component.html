@@ -1,4 +1,4 @@
-<div class="shell">
+<div class="shell" [class.collapsed]="isCollapsed">
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">
@@ -13,17 +13,25 @@
         <div class="brand-name">Park Intelli Solutions</div>
         <div class="brand-sub">MIS Dashboard Platform</div>
       </div>
+      <button class="collapse-toggle" (click)="toggleSidebar()"
+        [attr.title]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'" aria-label="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" class="toggle-icon">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
     </div>
 
     <nav class="nav">
       <div class="nav-section-title">
         <span>DEPARTMENTS</span>
-        <span class="count-badge" *ngIf="departments.length">{{ departments.length }}</span>
+        <!-- <span class="count-badge" *ngIf="departments.length">{{ departments.length }}</span> -->
       </div>
 
       <ng-container *ngIf="!loading && !loadError">
         <a *ngFor="let d of departments" class="nav-item" [class.disabled]="!d.available"
-          [routerLink]="d.available ? ['/', d.id] : null" routerLinkActive="active">
+          [routerLink]="d.available ? ['/', d.id] : null" routerLinkActive="active"
+          [attr.title]="isCollapsed ? d.label + (d.available ? '' : ' (Unavailable)') : (d.available ? 'Live Data Available' : 'Source File Missing')">
           <div class="nav-item-icon">
             <svg *ngIf="d.id === 'marketing'" width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -78,7 +86,7 @@
 
       <div class="nav-hint loading-state" *ngIf="loading">
         <div class="spinner"></div>
-        Fetching department list…
+        <span class="loading-text">Fetching department list…</span>
       </div>
 
       <div class="nav-hint error-state" *ngIf="loadError">

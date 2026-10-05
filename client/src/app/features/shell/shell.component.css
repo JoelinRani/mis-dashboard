@@ -4,6 +4,7 @@
 }
 
 .sidebar {
+  width: 260px;
   min-width: 260px;
   flex-shrink: 0;
   background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
@@ -18,15 +19,17 @@
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
   z-index: 100;
   user-select: none;
+  transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.22s cubic-bezier(0.16, 1, 0.3, 1), padding 0.22s ease;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 8px 20px;
+  gap: 10px;
+  padding: 4px 4px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: 20px;
+  transition: all 0.2s ease;
 }
 
 .brand-mark {
@@ -47,12 +50,20 @@
   transform: scale(1.04);
 }
 
+.brand-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
 .brand-name {
   font-size: 13px;
   font-weight: 800;
   color: #f8fafc;
   line-height: 1.2;
   letter-spacing: -0.015em;
+  white-space: nowrap;
 }
 
 .brand-sub {
@@ -60,6 +71,33 @@
   color: #94a3b8;
   font-weight: 500;
   margin-top: 2px;
+  white-space: nowrap;
+}
+
+.collapse-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.collapse-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-icon {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav {
@@ -305,13 +343,100 @@
   background: var(--page-plane);
 }
 
+/* ==========================================================================
+   Collapsed Sidebar State
+   ========================================================================== */
+
+.shell.collapsed .sidebar {
+  width: 72px;
+  min-width: 72px;
+  padding: 20px 10px;
+}
+
+.shell.collapsed .brand {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0 16px;
+}
+
+.shell.collapsed .brand-text {
+  display: none;
+}
+
+.shell.collapsed .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.shell.collapsed .nav-section-title {
+  justify-content: center;
+  padding: 4px 0 8px;
+}
+
+.shell.collapsed .nav-section-title span:first-child {
+  display: none;
+}
+
+.shell.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.shell.collapsed .nav-item:hover {
+  transform: none;
+}
+
+.shell.collapsed .nav-item-label {
+  display: none;
+}
+
+.shell.collapsed .status-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.shell.collapsed .loading-text,
+.shell.collapsed .error-state span {
+  display: none;
+}
+
+.shell.collapsed .nav-hint {
+  padding: 8px;
+  justify-content: center;
+}
+
+.shell.collapsed .sidebar-footer {
+  padding-top: 12px;
+}
+
+.shell.collapsed .system-status-card {
+  padding: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.shell.collapsed .status-header {
+  margin-bottom: 0;
+}
+
+.shell.collapsed .status-title,
+.shell.collapsed .status-desc {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .shell {
     flex-direction: column;
   }
 
-  .sidebar {
+  .sidebar,
+  .shell.collapsed .sidebar {
     width: 100%;
+    min-width: 100%;
     height: auto;
     position: relative;
     border-right: none;
@@ -320,23 +445,50 @@
     padding: 16px;
   }
 
-  .brand {
+  .brand,
+  .shell.collapsed .brand {
+    flex-direction: row;
     border-bottom: none;
     padding-bottom: 0;
     margin-bottom: 0;
   }
 
-  .nav {
+  .brand-text,
+  .shell.collapsed .brand-text {
+    display: block;
+  }
+
+  .nav,
+  .shell.collapsed .nav {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .nav-section-title {
+  .nav-item,
+  .shell.collapsed .nav-item {
+    justify-content: flex-start;
+    padding: 8px 10px;
+    gap: 12px;
+  }
+
+  .nav-item-label,
+  .shell.collapsed .nav-item-label {
+    display: inline;
+  }
+
+  .status-indicator,
+  .shell.collapsed .status-indicator {
+    position: static;
+  }
+
+  .nav-section-title,
+  .shell.collapsed .nav-section-title {
     display: none;
   }
 
-  .sidebar-footer {
+  .sidebar-footer,
+  .shell.collapsed .sidebar-footer {
     display: none;
   }
 
