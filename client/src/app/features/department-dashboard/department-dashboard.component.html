@@ -27,77 +27,81 @@
   <!-- Dynamic Filters Bar (CRE Utilization) -->
   <section class="filters-bar" *ngIf="data.department === 'cre-utilization'">
     <div class="filter-group">
-      <span class="filter-title">FILTERS</span>
+      <!-- <span class="filter-title">Filters:</span> -->
 
-      <div class="filter-control">
-        <label for="monthFilter" class="filter-label">Month:</label>
-        <select id="monthFilter" class="filter-select select-month" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
-          <option *ngFor="let m of monthsList" [value]="m">{{ m }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        label="Month"
+        [options]="monthsList"
+        [selectedValues]="selectedMonths"
+        (selectionChange)="selectedMonths = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <div class="filter-control">
-        <label for="clientFilter" class="filter-label">Client:</label>
-        <select id="clientFilter" class="filter-select select-client" [(ngModel)]="selectedClient" (change)="onFilterChange()">
-          <option *ngFor="let c of clientsList" [value]="c">{{ c }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        label="Client"
+        [options]="clientsList"
+        [selectedValues]="selectedClients"
+        (selectionChange)="selectedClients = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <span class="filter-hint">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="19,12 5,5 5,19"></polygon>
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span>Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        Use the dropdowns to update every KPI, chart and table below
-      </span>
+      </button>
     </div>
   </section>
 
   <!-- Dynamic Filters Bar (Marketing Lead Generation) -->
-  <section class="filters-bar marketing-theme" *ngIf="data.department === 'marketing'">
+  <section class="filters-bar" *ngIf="data.department === 'marketing'">
     <div class="filter-group">
-      <span class="filter-title">FILTERS:</span>
+      <!-- <span class="filter-title">Filters:</span> -->
 
-      <div class="filter-control" *ngIf="monthsList.length > 1">
-        <label for="mMonthFilter" class="filter-label">Month:</label>
-        <select id="mMonthFilter" class="filter-select select-coral" [(ngModel)]="selectedMonth" (change)="onFilterChange()">
-          <option *ngFor="let m of monthsList" [value]="m">{{ m }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        *ngIf="monthsList.length > 0"
+        label="Month"
+        [options]="monthsList"
+        [selectedValues]="selectedMonths"
+        (selectionChange)="selectedMonths = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <div class="filter-control">
-        <label for="mClientFilter" class="filter-label">Client:</label>
-        <select id="mClientFilter" class="filter-select select-coral" [(ngModel)]="selectedClient" (change)="onFilterChange()">
-          <option *ngFor="let c of clientsList" [value]="c">{{ c }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        label="Client"
+        [options]="clientsList"
+        [selectedValues]="selectedClients"
+        (selectionChange)="selectedClients = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <div class="filter-control">
-        <label for="mStateFilter" class="filter-label">State:</label>
-        <select id="mStateFilter" class="filter-select select-coral" [(ngModel)]="selectedState" (change)="onFilterChange()">
-          <option *ngFor="let s of statesList" [value]="s">{{ s }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        label="State"
+        [options]="statesList"
+        [selectedValues]="selectedStates"
+        (selectionChange)="selectedStates = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <div class="filter-control">
-        <label for="mPropFilter" class="filter-label">Property Type:</label>
-        <select id="mPropFilter" class="filter-select select-coral" [(ngModel)]="selectedPropertyType" (change)="onFilterChange()">
-          <option *ngFor="let p of propertyTypesList" [value]="p">{{ p }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        label="Property Type"
+        [options]="propertyTypesList"
+        [selectedValues]="selectedPropertyTypes"
+        (selectionChange)="selectedPropertyTypes = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <div class="filter-control" *ngIf="accountTypesList.length > 2">
-        <label for="mAccFilter" class="filter-label">Account Type:</label>
-        <select id="mAccFilter" class="filter-select select-coral" [(ngModel)]="selectedAccountType" (change)="onFilterChange()">
-          <option *ngFor="let a of accountTypesList" [value]="a">{{ a }}</option>
-        </select>
-      </div>
+      <app-multi-select-dropdown
+        *ngIf="accountTypesList.length > 1"
+        label="Account Type"
+        [options]="accountTypesList"
+        [selectedValues]="selectedAccountTypes"
+        (selectionChange)="selectedAccountTypes = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
 
-      <!-- <span class="filter-hint">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-          <polygon points="19,12 5,5 5,19"></polygon>
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span>Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-        Use the dropdowns to update every KPI, chart and table below
-      </span> -->
+      </button>
     </div>
   </section>
 
