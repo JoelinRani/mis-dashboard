@@ -34,6 +34,14 @@ export class MultiSelectDropdownComponent {
     this.isOpen = false;
   }
 
+  @HostListener('window:close-other-dropdowns', ['$event'])
+  onOtherDropdownOpened(event: Event): void {
+    const customEvt = event as CustomEvent;
+    if (customEvt.detail !== this) {
+      this.isOpen = false;
+    }
+  }
+
   toggleOpen(event?: MouseEvent): void {
     if (event) {
       event.stopPropagation();
@@ -41,6 +49,9 @@ export class MultiSelectDropdownComponent {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
       this.searchTerm = '';
+      try {
+        window.dispatchEvent(new CustomEvent('close-other-dropdowns', { detail: this }));
+      } catch {}
     }
   }
 

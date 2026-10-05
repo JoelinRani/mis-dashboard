@@ -557,7 +557,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
     if (this.selectedMonths.length === 0) {
       filesChartTitle = this.selectedClients.length > 0
-        ? `Files Received vs Delivered for ${this.selectedClients.join(', ')} by Month`
+        ? `Files Received vs Delivered for filtered Month`
         : 'Files Received vs Delivered by Month';
       byRec = groupSum(filteredDeliverables, (r) => r.month, (r) => r.filesReceived)
         .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]));
@@ -585,7 +585,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       },
       {
         id: 'hoursByClient',
-        title: this.selectedClients.length > 0 ? `Hours Logged for ${this.selectedClients.join(', ')}` : 'Hours by Client (Top 12)',
+        title: this.selectedClients.length > 0 ? `Hours Logged for filtered Clients` : 'Hours by Client (Top 12)',
         type: 'bar',
         labels: hoursByClientData.map((x) => x[0]),
         series: [{ name: 'Hours', data: hoursByClientData.map((x) => Math.round(x[1] * 10) / 10) }],
