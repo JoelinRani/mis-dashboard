@@ -105,6 +105,67 @@
     </div>
   </section>
 
+  <!-- Dynamic Filters Bar (HR Query & Support) -->
+  <section class="filters-bar" *ngIf="data.department === 'hr-query'">
+    <div class="filter-group">
+      <app-multi-select-dropdown
+        *ngIf="yearsList.length > 0"
+        label="Year"
+        [options]="yearsList"
+        [selectedValues]="selectedYears"
+        (selectionChange)="selectedYears = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="monthsList.length > 0"
+        label="Month"
+        [options]="monthsList"
+        [selectedValues]="selectedMonths"
+        (selectionChange)="selectedMonths = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="subCategoriesList.length > 0"
+        label="Sub-Category"
+        [options]="subCategoriesList"
+        [selectedValues]="selectedSubCategories"
+        (selectionChange)="selectedSubCategories = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="prioritiesList.length > 0"
+        label="Priority"
+        [options]="prioritiesList"
+        [selectedValues]="selectedPriorities"
+        (selectionChange)="selectedPriorities = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="assistancePersonsList.length > 0"
+        label="HR Handler"
+        [options]="assistancePersonsList"
+        [selectedValues]="selectedAssistancePersons"
+        (selectionChange)="selectedAssistancePersons = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="statusesList.length > 0"
+        label="Status"
+        [options]="statusesList"
+        [selectedValues]="selectedStatuses"
+        (selectionChange)="selectedStatuses = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span>Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </section>
+
   <!-- Interactive KPI Metric Cards -->
   <section class="kpi-grid">
     <app-kpi-card *ngFor="let k of displayedKpis" [kpi]="k" (cardClick)="onKpiClick($event)"></app-kpi-card>

@@ -94,6 +94,15 @@ const COLUMN_TITLES: Record<string, string> = {
   plannedCompletionPct: 'Planned %',
   actualCompletionPct: 'Actual % Complete',
   scheduleVariancePct: 'Schedule Variance %',
+  queryDate: 'Query Date',
+  queryCode: 'Query Code',
+  employeeCode: 'Emp Code',
+  empCode: 'Emp Code',
+  subCategory: 'Sub Category',
+  subject: 'Query Subject',
+  priority: 'Priority',
+  assistancePerson: 'HR Handler',
+  year: 'Year',
 };
 
 const STATUS_KEYS = new Set(['status', 'outcome', 'severity', 'connect', 'slaStatus', 'allocationStatus', 'preliminaryResearch']);
@@ -134,18 +143,28 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
   modalSortKey: string | null = null;
   modalSortDir: 'asc' | 'desc' = 'asc';
 
-  // Multi-select Filter state for CRE Utilization & Marketing Lead Generation
+  // Multi-select Filter state for CRE Utilization & Marketing Lead Generation & HR Query
+  selectedYears: string[] = [];
   selectedMonths: string[] = [];
   selectedClients: string[] = [];
   selectedStates: string[] = [];
   selectedPropertyTypes: string[] = [];
   selectedAccountTypes: string[] = [];
+  selectedSubCategories: string[] = [];
+  selectedPriorities: string[] = [];
+  selectedAssistancePersons: string[] = [];
+  selectedStatuses: string[] = [];
 
+  yearsList: string[] = [];
   monthsList: string[] = [];
   clientsList: string[] = [];
   statesList: string[] = [];
   propertyTypesList: string[] = [];
   accountTypesList: string[] = [];
+  subCategoriesList: string[] = [];
+  prioritiesList: string[] = [];
+  assistancePersonsList: string[] = [];
+  statusesList: string[] = [];
 
   displayedKpis: Kpi[] = [];
   displayedCharts: ChartDef[] = [];
@@ -294,6 +313,8 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.updateFilteredCreData();
     } else if (this.data.department === 'marketing') {
       this.updateFilteredMarketingData();
+    } else if (this.data.department === 'hr-query') {
+      this.updateFilteredHrQueryData();
     } else {
       this.displayedKpis = this.data.kpis ? [...this.data.kpis] : [];
       this.displayedCharts = this.data.charts ? [...this.data.charts] : [];
@@ -302,20 +323,30 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
   get hasActiveFilters(): boolean {
     return (
+      this.selectedYears.length > 0 ||
       this.selectedMonths.length > 0 ||
       this.selectedClients.length > 0 ||
       this.selectedStates.length > 0 ||
       this.selectedPropertyTypes.length > 0 ||
-      this.selectedAccountTypes.length > 0
+      this.selectedAccountTypes.length > 0 ||
+      this.selectedSubCategories.length > 0 ||
+      this.selectedPriorities.length > 0 ||
+      this.selectedAssistancePersons.length > 0 ||
+      this.selectedStatuses.length > 0
     );
   }
 
   resetFilters(): void {
+    this.selectedYears = [];
     this.selectedMonths = [];
     this.selectedClients = [];
     this.selectedStates = [];
     this.selectedPropertyTypes = [];
     this.selectedAccountTypes = [];
+    this.selectedSubCategories = [];
+    this.selectedPriorities = [];
+    this.selectedAssistancePersons = [];
+    this.selectedStatuses = [];
     this.onFilterChange();
   }
 
@@ -382,6 +413,46 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.selectedStates = this.selectedStates.filter((s) => this.statesList.includes(s));
       this.selectedPropertyTypes = this.selectedPropertyTypes.filter((p) => this.propertyTypesList.includes(p));
       this.selectedAccountTypes = this.selectedAccountTypes.filter((a) => this.accountTypesList.includes(a));
+    } else if (this.data.department === 'hr-query') {
+      const queries = this.getTableRecords('queries');
+
+      const allYears = new Set<string>();
+      const allMonths = new Set<string>();
+      const allSubCats = new Set<string>();
+      const allPrios = new Set<string>();
+      const allHands = new Set<string>();
+      const allStats = new Set<string>();
+
+      queries.forEach((q) => {
+        if (q.year) allYears.add(String(q.year));
+        if (q.month) allMonths.add(q.month);
+        if (q.subCategory) allSubCats.add(q.subCategory);
+        if (q.priority) allPrios.add(q.priority);
+        if (q.assistancePerson) allHands.add(q.assistancePerson);
+        if (q.status) allStats.add(q.status);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.yearsList = [...allYears].sort();
+      this.monthsList = sortedMonths.length ? sortedMonths : monthOrder;
+      this.subCategoriesList = [...allSubCats].sort();
+      this.prioritiesList = [...allPrios].sort();
+      this.assistancePersonsList = [...allHands].sort();
+      this.statusesList = [...allStats].sort();
+
+      this.selectedYears = this.selectedYears.filter((y) => this.yearsList.includes(y));
+      this.selectedMonths = this.selectedMonths.filter((m) => this.monthsList.includes(m));
+      this.selectedSubCategories = this.selectedSubCategories.filter((s) => this.subCategoriesList.includes(s));
+      this.selectedPriorities = this.selectedPriorities.filter((p) => this.prioritiesList.includes(p));
+      this.selectedAssistancePersons = this.selectedAssistancePersons.filter((a) => this.assistancePersonsList.includes(a));
+      this.selectedStatuses = this.selectedStatuses.filter((st) => this.statusesList.includes(st));
     }
 
     this.updateFilteredData();
@@ -457,6 +528,48 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.selectedAccountTypes = [];
 
       this.updateFilteredMarketingData();
+    } else if (this.data.department === 'hr-query') {
+      const queries = this.getTableRecords('queries');
+
+      const allYears = new Set<string>();
+      const allMonths = new Set<string>();
+      const allSubCats = new Set<string>();
+      const allPrios = new Set<string>();
+      const allHands = new Set<string>();
+      const allStats = new Set<string>();
+
+      queries.forEach((q) => {
+        if (q.year) allYears.add(String(q.year));
+        if (q.month) allMonths.add(q.month);
+        if (q.subCategory) allSubCats.add(q.subCategory);
+        if (q.priority) allPrios.add(q.priority);
+        if (q.assistancePerson) allHands.add(q.assistancePerson);
+        if (q.status) allStats.add(q.status);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.yearsList = [...allYears].sort();
+      this.monthsList = sortedMonths.length ? sortedMonths : monthOrder;
+      this.subCategoriesList = [...allSubCats].sort();
+      this.prioritiesList = [...allPrios].sort();
+      this.assistancePersonsList = [...allHands].sort();
+      this.statusesList = [...allStats].sort();
+
+      this.selectedYears = [];
+      this.selectedMonths = [];
+      this.selectedSubCategories = [];
+      this.selectedPriorities = [];
+      this.selectedAssistancePersons = [];
+      this.selectedStatuses = [];
+
+      this.updateFilteredHrQueryData();
     } else {
       this.displayedKpis = this.data.kpis || [];
       this.displayedCharts = this.data.charts || [];
@@ -468,7 +581,64 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.updateFilteredCreData();
     } else if (this.data?.department === 'marketing') {
       this.updateFilteredMarketingData();
+    } else if (this.data?.department === 'hr-query') {
+      this.updateFilteredHrQueryData();
     }
+  }
+
+  updateFilteredHrQueryData(): void {
+    if (!this.data || this.data.department !== 'hr-query') return;
+
+    const queriesAll = this.getTableRecords('queries');
+
+    const filteredQueries = queriesAll.filter((q) => {
+      const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
+      const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+      const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
+      const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
+      const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
+      const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
+      return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+    });
+
+    const totalQueries = filteredQueries.length;
+    const completed = filteredQueries.filter((q) => q.status === 'Completed').length;
+    const inProcess = filteredQueries.filter((q) => q.status === 'In-Process').length;
+    const resolutionRate = totalQueries ? Math.round((completed / totalQueries) * 1000) / 10 : 0;
+    const highPriorityShare = totalQueries ? Math.round((filteredQueries.filter((q) => q.priority === 'High' || q.priority === 'Very High').length / totalQueries) * 1000) / 10 : 0;
+    const hrTeamHandlers = new Set(filteredQueries.map((q) => q.assistancePerson).filter(Boolean)).size;
+
+    this.displayedKpis = [
+      { key: 'totalQueries', label: 'TOTAL QUERIES LOGGED', value: totalQueries, format: 'number' },
+      { key: 'completed', label: 'COMPLETED QUERIES', value: completed, format: 'number' },
+      { key: 'inProcess', label: 'IN-PROCESS QUERIES', value: inProcess, format: 'number' },
+      { key: 'resolutionRate', label: 'RESOLUTION RATE %', value: resolutionRate, format: 'percent' },
+      { key: 'highPriorityShare', label: 'HIGH PRIORITY SHARE', value: highPriorityShare, format: 'percent' },
+      { key: 'hrTeamHandlers', label: 'HR TEAM HANDLERS', value: hrTeamHandlers, format: 'number' },
+    ];
+
+    const groupCount = (keyFn: (r: any) => string) => {
+      const map = new Map<string, number>();
+      filteredQueries.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const byCategory = groupCount((q) => q.category);
+    const bySubCategory = groupCount((q) => q.subCategory).slice(0, 12);
+    const byPriority = groupCount((q) => q.priority);
+    const byStatus = groupCount((q) => q.status);
+    const byHandler = groupCount((q) => q.assistancePerson).slice(0, 10);
+
+    this.displayedCharts = [
+      /* { id: 'byCategory', title: 'Queries by Category', type: 'bar', labels: byCategory.map((x) => x[0]), series: [{ name: 'Queries', data: byCategory.map((x) => x[1]) }] }, */
+      { id: 'bySubCategory', title: 'Queries by Sub-Category (Top 12)', type: 'bar', labels: bySubCategory.map((x) => x[0]), series: [{ name: 'Queries', data: bySubCategory.map((x) => x[1]) }] },
+      { id: 'byPriority', title: 'Queries by Priority', type: 'pie', labels: byPriority.map((x) => x[0]), series: [{ name: 'Queries', data: byPriority.map((x) => x[1]) }] },
+      { id: 'byStatus', title: 'Queries by Status', type: 'bar', labels: byStatus.map((x) => x[0]), series: [{ name: 'Queries', data: byStatus.map((x) => x[1]) }] },
+      { id: 'byHandler', title: 'Queries Handled by HR Team (Top 10)', type: 'pie', labels: byHandler.map((x) => x[0]), series: [{ name: 'Queries', data: byHandler.map((x) => x[1]) }] },
+    ];
   }
 
   updateFilteredCreData(): void {
@@ -564,7 +734,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       byDel = groupSum(filteredDeliverables, (r) => r.month, (r) => r.filesDelivered)
         .sort((a, b) => monthOrder.indexOf(a[0]) - monthOrder.indexOf(b[0]));
     } else {
-      filesChartTitle = `Files Received vs Delivered (${this.selectedMonths.join(', ')})`;
+      filesChartTitle = `Files Received vs Delivered for filtered Months`;
       byRec = groupSum(filteredDeliverables, (r) => r.client, (r) => r.filesReceived);
       byDel = groupSum(filteredDeliverables, (r) => r.client, (r) => r.filesDelivered);
     }
@@ -779,7 +949,12 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       l.includes('action') ||
       l.includes('feedback') ||
       l.includes('reason') ||
-      l.includes('project')
+      l.includes('project') ||
+      l.includes('subject') ||
+      l.includes('person') ||
+      l.includes('handler') ||
+      l.includes('employee') ||
+      l.includes('detail')
     );
   }
 
@@ -1120,6 +1295,37 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           })));
           break;
       }
+    } else if (dep === 'hr-query') {
+      const queriesAll = this.getTableRecords('queries');
+      const queries = queriesAll.filter((q) => {
+        const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
+        const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
+        const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
+        const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
+        const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
+        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+      });
+
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+
+      switch (kpi.key) {
+        case 'completed':
+          this.showDataModal(`Completed HR Queries (${kpi.value})`, queries.filter((q) => q.status === 'Completed'), filterSubtitle);
+          break;
+        case 'inProcess':
+          this.showDataModal(`In-Process HR Queries (${kpi.value})`, queries.filter((q) => q.status === 'In-Process'), filterSubtitle);
+          break;
+        case 'highPriorityShare':
+          this.showDataModal(`High Priority HR Queries`, queries.filter((q) => q.priority === 'High'), filterSubtitle);
+          break;
+        case 'hrTeamHandlers':
+          this.showDataModal(`HR Team Handlers (${kpi.value})`, this.getHrHandlersSummary(queries), filterSubtitle);
+          break;
+        default:
+          this.showDataModal(`HR Queries (${queries.length})`, queries, filterSubtitle);
+          break;
+      }
     }
   }
 
@@ -1245,6 +1451,19 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         connectRate: e.attempts ? Math.round((e.connected / e.attempts) * 1000) / 10 : 0,
       }))
       .sort((a, b) => b.attempts - a.attempts);
+  }
+
+  private getHrHandlersSummary(queries: any[]): any[] {
+    const map = new Map<string, { assistancePerson: string; totalQueries: number; completed: number; inProcess: number }>();
+    queries.forEach((q) => {
+      const hand = q.assistancePerson || 'Unassigned';
+      const entry = map.get(hand) || { assistancePerson: hand, totalQueries: 0, completed: 0, inProcess: 0 };
+      entry.totalQueries += 1;
+      if (q.status === 'Completed') entry.completed += 1;
+      if (q.status === 'In-Process') entry.inProcess += 1;
+      map.set(hand, entry);
+    });
+    return [...map.values()].sort((a, b) => b.totalQueries - a.totalQueries);
   }
 
 
@@ -1393,6 +1612,31 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         }));
         this.showDataModal(`IT Components (${event.label} Status - ${filtered.length})`, filtered);
       }
+    } else if (dep === 'hr-query') {
+      const queriesAll = this.getTableRecords('queries');
+      const queries = queriesAll.filter((q) => {
+        const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
+        const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
+        const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
+        const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
+        const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
+        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+      });
+
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+
+      if (event.chartId === 'byCategory') {
+        this.showDataModal(`Queries in Category: ${event.label}`, queries.filter((q) => q.category === event.label), filterSubtitle);
+      } else if (event.chartId === 'bySubCategory') {
+        this.showDataModal(`Queries in Sub-Category: ${event.label}`, queries.filter((q) => q.subCategory === event.label), filterSubtitle);
+      } else if (event.chartId === 'byPriority') {
+        this.showDataModal(`Queries with Priority: ${event.label}`, queries.filter((q) => q.priority === event.label), filterSubtitle);
+      } else if (event.chartId === 'byStatus') {
+        this.showDataModal(`Queries with Status: ${event.label}`, queries.filter((q) => q.status === event.label), filterSubtitle);
+      } else if (event.chartId === 'byHandler') {
+        this.showDataModal(`Queries Handled by: ${event.label}`, queries.filter((q) => q.assistancePerson === event.label), filterSubtitle);
+      }
     }
   }
 
@@ -1501,6 +1745,19 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           status: r.status,
         })));
       }
+    } else if (dep === 'hr-query') {
+      const queriesAll = this.getTableRecords('queries');
+      const queries = queriesAll.filter((q) => {
+        const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
+        const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
+        const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
+        const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
+        const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
+        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+      });
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+      this.showDataModal(chart.title, queries, filterSubtitle);
     }
   }
 

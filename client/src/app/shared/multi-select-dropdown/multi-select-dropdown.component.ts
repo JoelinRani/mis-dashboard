@@ -101,6 +101,6 @@ export class MultiSelectDropdownComponent {
     if (this.selectedValues.length === 2) {
       return `${this.selectedValues[0]}, ${this.selectedValues[1]}`;
     }
-    return `${this.selectedValues.length} Selected`;
+    return `Selected`;
   }
 }
