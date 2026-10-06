@@ -31,6 +31,12 @@ const DEPARTMENTS = [
     fileName: 'Weekly_IT_MIS_Report_V1.xlsx',
     cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQBFZ0Gcr1oqQL59L9uoQHEpAebC8cRUGye9-iY_Azqck4E?e=hIgQME',
   },
+  {
+    id: 'hr-query',
+    label: 'HR Query & Support',
+    fileName: 'HR Query Report.xlsm',
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQC4aZ2CFH53S6yeoVW7i4cSAbG5CYsdneFrot6Gxi17tfU?e=bE4CIs',
+  },
 ];
 
 module.exports = { PORT, DEPARTMENTS };
