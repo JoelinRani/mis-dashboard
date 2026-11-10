@@ -7,6 +7,7 @@ const { parseOutboundDesk } = require('../parsers/outboundDesk');
 const { parseSwEngineering } = require('../parsers/swEngineering');
 const { parseItOperations } = require('../parsers/itOperations');
 const { parseHrQuery } = require('../parsers/hrQuery');
+const { parseResidentialAppraisal } = require('../parsers/residentialAppraisal');
 
 const PARSERS = {
   marketing: parseMarketing,
@@ -15,6 +16,7 @@ const PARSERS = {
   'sw-engineering': parseSwEngineering,
   'it-operations': parseItOperations,
   'hr-query': parseHrQuery,
+  'residential-appraisal': parseResidentialAppraisal,
 };
 
 // In-memory instant cache

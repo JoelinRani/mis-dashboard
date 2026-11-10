@@ -94,9 +94,37 @@ function cleanStr(v) {
 
 function toISODate(v) {
   if (!v) return null;
-  if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0, 10);
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    const adjusted = new Date(v.getTime() + 6 * 3600 * 1000);
+    return adjusted.toISOString().slice(0, 10);
+  }
+  if (typeof v === 'number' && v > 20000 && v < 80000) {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return d.toISOString().slice(0, 10);
+  }
+  if (typeof v === 'string') {
+    const s = v.trim();
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      let month = parseInt(m[1], 10);
+      let day = parseInt(m[2], 10);
+      let year = parseInt(m[3], 10);
+      if (year < 100) year = 2000 + year;
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+    }
+    const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return isoMatch[0];
+    }
+  }
   const d = new Date(v);
-  return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  if (!isNaN(d.getTime())) {
+    const adjusted = new Date(d.getTime() + 6 * 3600 * 1000);
+    return adjusted.toISOString().slice(0, 10);
+  }
+  return null;
 }
 
 module.exports = {

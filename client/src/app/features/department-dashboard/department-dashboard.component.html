@@ -125,6 +125,14 @@
       ></app-multi-select-dropdown>
 
       <app-multi-select-dropdown
+        *ngIf="categoriesList.length > 0"
+        label="Query Category"
+        [options]="categoriesList"
+        [selectedValues]="selectedCategories"
+        (selectionChange)="selectedCategories = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
         *ngIf="subCategoriesList.length > 0"
         label="Sub-Category"
         [options]="subCategoriesList"
@@ -158,6 +166,218 @@
 
       <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
         <span>Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Dynamic Filters Bar (Weekly IT MIS & Operations) -->
+  <section class="filters-bar" *ngIf="data.department === 'it-operations'">
+    <div class="filter-group">
+      <app-multi-select-dropdown
+        *ngIf="categoriesList.length > 0"
+        label="Category"
+        [options]="categoriesList"
+        [selectedValues]="selectedCategories"
+        (selectionChange)="selectedCategories = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="statusesList.length > 0"
+        label="Status"
+        [options]="statusesList"
+        [selectedValues]="selectedStatuses"
+        (selectionChange)="selectedStatuses = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="resourcesList.length > 0"
+        label="IT Engineer"
+        [options]="resourcesList"
+        [selectedValues]="selectedResources"
+        (selectionChange)="selectedResources = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="allocationsList.length > 0"
+        label="Allocation Type"
+        [options]="allocationsList"
+        [selectedValues]="selectedAllocations"
+        (selectionChange)="selectedAllocations = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="projectsList.length > 0"
+        label="Project"
+        [options]="projectsList"
+        [selectedValues]="selectedProjects"
+        (selectionChange)="selectedProjects = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span style="font-size: 11px;">Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Dynamic Filters Bar (Residential Appraisal) -->
+  <section class="filters-bar" *ngIf="data.department === 'residential-appraisal'">
+    <div class="filter-group">
+      <app-multi-select-dropdown
+        *ngIf="monthsList.length > 0"
+        label="Month"
+        [options]="monthsList"
+        [selectedValues]="selectedMonths"
+        (selectionChange)="selectedMonths = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="clientsList.length > 0"
+        label="Client / AMC"
+        [options]="clientsList"
+        [selectedValues]="selectedClients"
+        (selectionChange)="selectedClients = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="statesList.length > 0"
+        label="State"
+        [options]="statesList"
+        [selectedValues]="selectedStates"
+        (selectionChange)="selectedStates = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="reportTypesList.length > 0"
+        label="Report Type"
+        [options]="reportTypesList"
+        [selectedValues]="selectedReportTypes"
+        (selectionChange)="selectedReportTypes = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="levelsList.length > 0"
+        label="Production Level"
+        [options]="levelsList"
+        [selectedValues]="selectedLevels"
+        (selectionChange)="selectedLevels = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="teamLeadsList.length > 0"
+        label="Team Lead"
+        [options]="teamLeadsList"
+        [selectedValues]="selectedTeamLeads"
+        (selectionChange)="selectedTeamLeads = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="agentsList.length > 0"
+        label="Agent"
+        [options]="agentsList"
+        [selectedValues]="selectedAgents"
+        (selectionChange)="selectedAgents = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span style="font-size: 11px;">Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Dynamic Filters Bar (Software Engineering) -->
+  <section class="filters-bar" *ngIf="data.department === 'sw-engineering'">
+    <div class="filter-group">
+      <app-multi-select-dropdown
+        *ngIf="projectsList.length > 0"
+        label="Project"
+        [options]="projectsList"
+        [selectedValues]="selectedProjects"
+        (selectionChange)="selectedProjects = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="statusesList.length > 0"
+        label="Status (RAG)"
+        [options]="statusesList"
+        [selectedValues]="selectedStatuses"
+        (selectionChange)="selectedStatuses = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="employeesList.length > 0"
+        label="Developer / Resource"
+        [options]="employeesList"
+        [selectedValues]="selectedEmployees"
+        (selectionChange)="selectedEmployees = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="rolesList.length > 0"
+        label="Role"
+        [options]="rolesList"
+        [selectedValues]="selectedRoles"
+        (selectionChange)="selectedRoles = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span style="font-size: 11px;">Clear filters</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- Dynamic Filters Bar (Outbound Desk) -->
+  <section class="filters-bar" *ngIf="data.department === 'outbound-desk'">
+    <div class="filter-group">
+      <app-multi-select-dropdown
+        *ngIf="agentsList.length > 0"
+        label="Agent"
+        [options]="agentsList"
+        [selectedValues]="selectedAgents"
+        (selectionChange)="selectedAgents = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="outcomesList.length > 0"
+        label="Call Outcome"
+        [options]="outcomesList"
+        [selectedValues]="selectedOutcomes"
+        (selectionChange)="selectedOutcomes = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="connectsList.length > 0"
+        label="Connected"
+        [options]="connectsList"
+        [selectedValues]="selectedConnects"
+        (selectionChange)="selectedConnects = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="datesList.length > 0"
+        label="Date"
+        [options]="datesList"
+        [selectedValues]="selectedDates"
+        (selectionChange)="selectedDates = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <button *ngIf="hasActiveFilters" type="button" class="btn-reset-filters" (click)="resetFilters()">
+        <span style="font-size: 11px;">Clear filters</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
