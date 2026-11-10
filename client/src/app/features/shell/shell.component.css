@@ -339,7 +339,7 @@
 .content {
   flex: 1;
   min-width: 0;
-  padding: 36px 44px 60px;
+  padding: 20px;
   background: var(--page-plane);
 }
 
@@ -426,73 +426,4 @@
 .shell.collapsed .status-title,
 .shell.collapsed .status-desc {
   display: none;
-}
-
-@media (max-width: 760px) {
-  .shell {
-    flex-direction: column;
-  }
-
-  .sidebar,
-  .shell.collapsed .sidebar {
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .brand,
-  .shell.collapsed .brand {
-    flex-direction: row;
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 0;
-  }
-
-  .brand-text,
-  .shell.collapsed .brand-text {
-    display: block;
-  }
-
-  .nav,
-  .shell.collapsed .nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .nav-item,
-  .shell.collapsed .nav-item {
-    justify-content: flex-start;
-    padding: 8px 10px;
-    gap: 12px;
-  }
-
-  .nav-item-label,
-  .shell.collapsed .nav-item-label {
-    display: inline;
-  }
-
-  .status-indicator,
-  .shell.collapsed .status-indicator {
-    position: static;
-  }
-
-  .nav-section-title,
-  .shell.collapsed .nav-section-title {
-    display: none;
-  }
-
-  .sidebar-footer,
-  .shell.collapsed .sidebar-footer {
-    display: none;
-  }
-
-  .content {
-    padding: 20px 16px 40px;
-  }
 }

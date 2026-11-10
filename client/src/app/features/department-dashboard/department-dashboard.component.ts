@@ -103,6 +103,42 @@ const COLUMN_TITLES: Record<string, string> = {
   priority: 'Priority',
   assistancePerson: 'HR Handler',
   year: 'Year',
+  fileNumber: 'File #',
+  address: 'Property Address',
+  primaryAppraiser: 'Primary Appraiser',
+  reportType: 'Report Type',
+  orderedByName: 'Client / AMC',
+  dueDate: 'Due Date',
+  processStatus: 'Process Status',
+  productionDate: 'Production Date',
+  level: 'Production Level',
+  shift: 'Shift',
+  compsCount: 'Comps Count / Received',
+  actualProdPct: 'Actual Prod %',
+  overallProdPct: 'Overall Prod %',
+  overallUtilPct: 'Overall Util %',
+  overallProdMins: 'Prod Mins',
+  prodMins: 'Prod Mins',
+  nonProdMins: 'Non-Prod Mins',
+  overallMins: 'Total Mins',
+  l1Count: 'Level 1 Files',
+  l2Count: 'Level 2 Files',
+  l3Count: 'Level 3 Files',
+  l4Count: 'Level 4 Files',
+  l5Count: 'Level 5 Files',
+  rentalCount: 'Rental / Clone',
+  comments: 'Comments',
+  prodHours: 'Production Hours',
+  nonProdHours: 'Non-Prod Hours',
+  overallHours: 'Total Hours',
+  avgProdPct: 'Avg Productivity %',
+  avgUtilPct: 'Avg Utilization %',
+  totalFilesCompleted: 'Total Files Completed',
+  teamLead: 'Team Lead',
+  name: 'Employee Name',
+  empId: 'Emp ID',
+  totalOrders: 'Total Orders',
+  reportTypesCount: 'Report Types Count',
 };
 
 const STATUS_KEYS = new Set(['status', 'outcome', 'severity', 'connect', 'slaStatus', 'allocationStatus', 'preliminaryResearch']);
@@ -116,6 +152,11 @@ const PERCENT_KEYS = new Set([
   'plannedCompletionPct',
   'actualCompletionPct',
   'scheduleVariancePct',
+  'actualProdPct',
+  'overallProdPct',
+  'overallUtilPct',
+  'avgProdPct',
+  'avgUtilPct',
 ]);
 
 @Component({
@@ -154,6 +195,19 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
   selectedPriorities: string[] = [];
   selectedAssistancePersons: string[] = [];
   selectedStatuses: string[] = [];
+  selectedReportTypes: string[] = [];
+  selectedTeamLeads: string[] = [];
+  selectedLevels: string[] = [];
+  selectedAgents: string[] = [];
+  selectedCategories: string[] = [];
+  selectedResources: string[] = [];
+  selectedAllocations: string[] = [];
+  selectedProjects: string[] = [];
+  selectedEmployees: string[] = [];
+  selectedRoles: string[] = [];
+  selectedOutcomes: string[] = [];
+  selectedConnects: string[] = [];
+  selectedDates: string[] = [];
 
   yearsList: string[] = [];
   monthsList: string[] = [];
@@ -165,6 +219,19 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
   prioritiesList: string[] = [];
   assistancePersonsList: string[] = [];
   statusesList: string[] = [];
+  reportTypesList: string[] = [];
+  teamLeadsList: string[] = [];
+  levelsList: string[] = [];
+  agentsList: string[] = [];
+  categoriesList: string[] = [];
+  resourcesList: string[] = [];
+  allocationsList: string[] = [];
+  projectsList: string[] = [];
+  employeesList: string[] = [];
+  rolesList: string[] = [];
+  outcomesList: string[] = [];
+  connectsList: string[] = [];
+  datesList: string[] = [];
 
   displayedKpis: Kpi[] = [];
   displayedCharts: ChartDef[] = [];
@@ -315,6 +382,14 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.updateFilteredMarketingData();
     } else if (this.data.department === 'hr-query') {
       this.updateFilteredHrQueryData();
+    } else if (this.data.department === 'residential-appraisal') {
+      this.updateFilteredResidentialData();
+    } else if (this.data.department === 'it-operations') {
+      this.updateFilteredItOperationsData();
+    } else if (this.data.department === 'sw-engineering') {
+      this.updateFilteredSwEngineeringData();
+    } else if (this.data.department === 'outbound-desk') {
+      this.updateFilteredOutboundDeskData();
     } else {
       this.displayedKpis = this.data.kpis ? [...this.data.kpis] : [];
       this.displayedCharts = this.data.charts ? [...this.data.charts] : [];
@@ -332,7 +407,20 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.selectedSubCategories.length > 0 ||
       this.selectedPriorities.length > 0 ||
       this.selectedAssistancePersons.length > 0 ||
-      this.selectedStatuses.length > 0
+      this.selectedStatuses.length > 0 ||
+      this.selectedReportTypes.length > 0 ||
+      this.selectedTeamLeads.length > 0 ||
+      this.selectedLevels.length > 0 ||
+      this.selectedAgents.length > 0 ||
+      this.selectedCategories.length > 0 ||
+      this.selectedResources.length > 0 ||
+      this.selectedAllocations.length > 0 ||
+      this.selectedProjects.length > 0 ||
+      this.selectedEmployees.length > 0 ||
+      this.selectedRoles.length > 0 ||
+      this.selectedOutcomes.length > 0 ||
+      this.selectedConnects.length > 0 ||
+      this.selectedDates.length > 0
     );
   }
 
@@ -347,6 +435,19 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     this.selectedPriorities = [];
     this.selectedAssistancePersons = [];
     this.selectedStatuses = [];
+    this.selectedReportTypes = [];
+    this.selectedTeamLeads = [];
+    this.selectedLevels = [];
+    this.selectedAgents = [];
+    this.selectedCategories = [];
+    this.selectedResources = [];
+    this.selectedAllocations = [];
+    this.selectedProjects = [];
+    this.selectedEmployees = [];
+    this.selectedRoles = [];
+    this.selectedOutcomes = [];
+    this.selectedConnects = [];
+    this.selectedDates = [];
     this.onFilterChange();
   }
 
@@ -418,6 +519,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       const allYears = new Set<string>();
       const allMonths = new Set<string>();
+      const allCategories = new Set<string>();
       const allSubCats = new Set<string>();
       const allPrios = new Set<string>();
       const allHands = new Set<string>();
@@ -426,6 +528,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       queries.forEach((q) => {
         if (q.year) allYears.add(String(q.year));
         if (q.month) allMonths.add(q.month);
+        if (q.category) allCategories.add(q.category);
         if (q.subCategory) allSubCats.add(q.subCategory);
         if (q.priority) allPrios.add(q.priority);
         if (q.assistancePerson) allHands.add(q.assistancePerson);
@@ -442,6 +545,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       this.yearsList = [...allYears].sort();
       this.monthsList = sortedMonths.length ? sortedMonths : monthOrder;
+      this.categoriesList = [...allCategories].sort();
       this.subCategoriesList = [...allSubCats].sort();
       this.prioritiesList = [...allPrios].sort();
       this.assistancePersonsList = [...allHands].sort();
@@ -449,10 +553,170 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       this.selectedYears = this.selectedYears.filter((y) => this.yearsList.includes(y));
       this.selectedMonths = this.selectedMonths.filter((m) => this.monthsList.includes(m));
+      this.selectedCategories = this.selectedCategories.filter((c) => this.categoriesList.includes(c));
       this.selectedSubCategories = this.selectedSubCategories.filter((s) => this.subCategoriesList.includes(s));
       this.selectedPriorities = this.selectedPriorities.filter((p) => this.prioritiesList.includes(p));
       this.selectedAssistancePersons = this.selectedAssistancePersons.filter((a) => this.assistancePersonsList.includes(a));
       this.selectedStatuses = this.selectedStatuses.filter((st) => this.statusesList.includes(st));
+    } else if (this.data.department === 'residential-appraisal') {
+      const orders = this.getTableRecords('orders');
+      const perf = this.getTableRecords('performance');
+      const emp = this.getTableRecords('employeeSummary');
+
+      const allMonths = new Set<string>();
+      const allClients = new Set<string>();
+      const allStates = new Set<string>();
+      const allReports = new Set<string>();
+      const allLeads = new Set<string>();
+      const allLevels = new Set<string>();
+      const allAgents = new Set<string>();
+
+      perf.forEach((p) => {
+        if (p.month) allMonths.add(p.month);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+      this.monthsList = sortedMonths;
+
+      orders.forEach((o) => {
+        if (o.orderedByName) allClients.add(o.orderedByName);
+        if (o.state) allStates.add(o.state);
+        if (o.reportType) allReports.add(o.reportType);
+        if (o.teamLead) allLeads.add(o.teamLead);
+        if (o.level) allLevels.add(o.level);
+        if (o.agent) allAgents.add(o.agent);
+      });
+      perf.forEach((p) => {
+        if (p.teamLead) allLeads.add(p.teamLead);
+        if (p.name) allAgents.add(p.name);
+      });
+      emp.forEach((e) => {
+        if (e.teamLead) allLeads.add(e.teamLead);
+        if (e.name) allAgents.add(e.name);
+      });
+
+      this.clientsList = [...allClients].sort();
+      this.statesList = [...allStates].sort();
+      this.reportTypesList = [...allReports].sort();
+      this.teamLeadsList = [...allLeads].sort();
+      this.levelsList = [...allLevels].sort();
+      this.agentsList = [...allAgents].sort();
+
+      this.selectedMonths = this.selectedMonths.filter((m) => this.monthsList.includes(m));
+      this.selectedClients = this.selectedClients.filter((c) => this.clientsList.includes(c));
+      this.selectedStates = this.selectedStates.filter((s) => this.statesList.includes(s));
+      this.selectedReportTypes = this.selectedReportTypes.filter((r) => this.reportTypesList.includes(r));
+      this.selectedTeamLeads = this.selectedTeamLeads.filter((t) => this.teamLeadsList.includes(t));
+      this.selectedLevels = this.selectedLevels.filter((l) => this.levelsList.includes(l));
+      this.selectedAgents = this.selectedAgents.filter((a) => this.agentsList.includes(a));
+    } else if (this.data.department === 'it-operations') {
+      const itKpi = this.getTableRecords('itKpi');
+      const resources = this.getTableRecords('resources');
+      const projects = this.getTableRecords('projects');
+
+      const allCategories = new Set<string>();
+      const allStatuses = new Set<string>();
+      const allResources = new Set<string>();
+      const allAllocations = new Set<string>();
+      const allProjects = new Set<string>();
+
+      itKpi.forEach((r) => {
+        if (r.category) allCategories.add(r.category);
+        if (r.status) allStatuses.add(r.status);
+      });
+      resources.forEach((r) => {
+        if (r.resource) allResources.add(r.resource);
+        if (r.allocation) allAllocations.add(r.allocation);
+        if (r.projectName) allProjects.add(r.projectName);
+        if (r.status) allStatuses.add(r.status);
+      });
+      projects.forEach((p) => {
+        if (p.project) allProjects.add(p.project);
+        if (p.owner) allResources.add(p.owner);
+        if (p.status) allStatuses.add(p.status);
+      });
+
+      this.categoriesList = [...allCategories].sort();
+      this.statusesList = [...allStatuses].sort();
+      this.resourcesList = [...allResources].sort();
+      this.allocationsList = [...allAllocations].sort();
+      this.projectsList = [...allProjects].sort();
+
+      this.selectedCategories = this.selectedCategories.filter((c) => this.categoriesList.includes(c));
+      this.selectedStatuses = this.selectedStatuses.filter((s) => this.statusesList.includes(s));
+      this.selectedResources = this.selectedResources.filter((r) => this.resourcesList.includes(r));
+      this.selectedAllocations = this.selectedAllocations.filter((a) => this.allocationsList.includes(a));
+      this.selectedProjects = this.selectedProjects.filter((p) => this.projectsList.includes(p));
+    } else if (this.data.department === 'sw-engineering') {
+      const projects = this.getTableRecords('projects');
+      const assignments = this.getTableRecords('assignments');
+      const employeeSummary = this.getTableRecords('employeeSummary');
+
+      const allProjects = new Set<string>();
+      const allStatuses = new Set<string>();
+      const allEmployees = new Set<string>();
+      const allRoles = new Set<string>();
+
+      projects.forEach((p) => {
+        if (p.project) allProjects.add(p.project);
+        if (p.status) allStatuses.add(p.status);
+      });
+      assignments.forEach((a) => {
+        if (a.project) allProjects.add(a.project);
+        if (a.employee) allEmployees.add(a.employee);
+        if (a.role) allRoles.add(a.role);
+      });
+      employeeSummary.forEach((e) => {
+        if (e.employee) allEmployees.add(e.employee);
+        if (e.role) allRoles.add(e.role);
+      });
+
+      this.projectsList = [...allProjects].sort();
+      this.statusesList = [...allStatuses].sort();
+      this.employeesList = [...allEmployees].sort();
+      this.rolesList = [...allRoles].sort();
+
+      this.selectedProjects = this.selectedProjects.filter((p) => this.projectsList.includes(p));
+      this.selectedStatuses = this.selectedStatuses.filter((s) => this.statusesList.includes(s));
+      this.selectedEmployees = this.selectedEmployees.filter((e) => this.employeesList.includes(e));
+      this.selectedRoles = this.selectedRoles.filter((r) => this.rolesList.includes(r));
+    } else if (this.data.department === 'outbound-desk') {
+      const calls = this.getTableRecords('calls');
+
+      const allAgents = new Set<string>();
+      const allOutcomes = new Set<string>();
+      const allConnects = new Set<string>();
+      const allDates = new Set<string>();
+
+      calls.forEach((c) => {
+        if (c.agent) allAgents.add(c.agent);
+        if (c.outcome) allOutcomes.add(c.outcome);
+        if (c.connect) allConnects.add(c.connect);
+        if (c.date) {
+          if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+            const [y, m, d] = c.date.slice(0, 10).split('-');
+            allDates.add(`${m}/${d}/${y}`);
+          } else {
+            allDates.add(String(c.date));
+          }
+        }
+      });
+
+      this.agentsList = [...allAgents].sort();
+      this.outcomesList = [...allOutcomes].sort();
+      this.connectsList = [...allConnects].sort();
+      this.datesList = [...allDates].sort();
+
+      this.selectedAgents = this.selectedAgents.filter((a) => this.agentsList.includes(a));
+      this.selectedOutcomes = this.selectedOutcomes.filter((o) => this.outcomesList.includes(o));
+      this.selectedConnects = this.selectedConnects.filter((c) => this.connectsList.includes(c));
+      this.selectedDates = this.selectedDates.filter((d) => this.datesList.includes(d));
     }
 
     this.updateFilteredData();
@@ -533,6 +797,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       const allYears = new Set<string>();
       const allMonths = new Set<string>();
+      const allCategories = new Set<string>();
       const allSubCats = new Set<string>();
       const allPrios = new Set<string>();
       const allHands = new Set<string>();
@@ -541,6 +806,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       queries.forEach((q) => {
         if (q.year) allYears.add(String(q.year));
         if (q.month) allMonths.add(q.month);
+        if (q.category) allCategories.add(q.category);
         if (q.subCategory) allSubCats.add(q.subCategory);
         if (q.priority) allPrios.add(q.priority);
         if (q.assistancePerson) allHands.add(q.assistancePerson);
@@ -557,6 +823,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       this.yearsList = [...allYears].sort();
       this.monthsList = sortedMonths.length ? sortedMonths : monthOrder;
+      this.categoriesList = [...allCategories].sort();
       this.subCategoriesList = [...allSubCats].sort();
       this.prioritiesList = [...allPrios].sort();
       this.assistancePersonsList = [...allHands].sort();
@@ -564,12 +831,180 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
 
       this.selectedYears = [];
       this.selectedMonths = [];
+      this.selectedCategories = [];
       this.selectedSubCategories = [];
       this.selectedPriorities = [];
       this.selectedAssistancePersons = [];
       this.selectedStatuses = [];
 
       this.updateFilteredHrQueryData();
+    } else if (this.data.department === 'residential-appraisal') {
+      const orders = this.getTableRecords('orders');
+      const perf = this.getTableRecords('performance');
+      const emp = this.getTableRecords('employeeSummary');
+
+      const allMonths = new Set<string>();
+      const allClients = new Set<string>();
+      const allStates = new Set<string>();
+      const allReports = new Set<string>();
+      const allLeads = new Set<string>();
+      const allLevels = new Set<string>();
+      const allAgents = new Set<string>();
+
+      perf.forEach((p) => {
+        if (p.month) allMonths.add(p.month);
+      });
+
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+      this.monthsList = sortedMonths;
+
+      orders.forEach((o) => {
+        if (o.orderedByName) allClients.add(o.orderedByName);
+        if (o.state) allStates.add(o.state);
+        if (o.reportType) allReports.add(o.reportType);
+        if (o.teamLead) allLeads.add(o.teamLead);
+        if (o.level) allLevels.add(o.level);
+        if (o.agent) allAgents.add(o.agent);
+      });
+      perf.forEach((p) => {
+        if (p.teamLead) allLeads.add(p.teamLead);
+        if (p.name) allAgents.add(p.name);
+      });
+      emp.forEach((e) => {
+        if (e.teamLead) allLeads.add(e.teamLead);
+        if (e.name) allAgents.add(e.name);
+      });
+
+      this.clientsList = [...allClients].sort();
+      this.statesList = [...allStates].sort();
+      this.reportTypesList = [...allReports].sort();
+      this.teamLeadsList = [...allLeads].sort();
+      this.levelsList = [...allLevels].sort();
+      this.agentsList = [...allAgents].sort();
+
+      this.selectedMonths = [];
+      this.selectedClients = [];
+      this.selectedStates = [];
+      this.selectedReportTypes = [];
+      this.selectedTeamLeads = [];
+      this.selectedLevels = [];
+      this.selectedAgents = [];
+
+      this.updateFilteredResidentialData();
+    } else if (this.data.department === 'it-operations') {
+      const itKpi = this.getTableRecords('itKpi');
+      const resources = this.getTableRecords('resources');
+      const projects = this.getTableRecords('projects');
+
+      const allCategories = new Set<string>();
+      const allStatuses = new Set<string>();
+      const allResources = new Set<string>();
+      const allAllocations = new Set<string>();
+      const allProjects = new Set<string>();
+
+      itKpi.forEach((r) => {
+        if (r.category) allCategories.add(r.category);
+        if (r.status) allStatuses.add(r.status);
+      });
+      resources.forEach((r) => {
+        if (r.resource) allResources.add(r.resource);
+        if (r.allocation) allAllocations.add(r.allocation);
+        if (r.projectName) allProjects.add(r.projectName);
+        if (r.status) allStatuses.add(r.status);
+      });
+      projects.forEach((p) => {
+        if (p.project) allProjects.add(p.project);
+        if (p.owner) allResources.add(p.owner);
+        if (p.status) allStatuses.add(p.status);
+      });
+
+      this.categoriesList = [...allCategories].sort();
+      this.statusesList = [...allStatuses].sort();
+      this.resourcesList = [...allResources].sort();
+      this.allocationsList = [...allAllocations].sort();
+      this.projectsList = [...allProjects].sort();
+
+      this.selectedCategories = [];
+      this.selectedStatuses = [];
+      this.selectedResources = [];
+      this.selectedAllocations = [];
+      this.selectedProjects = [];
+
+      this.updateFilteredItOperationsData();
+    } else if (this.data.department === 'sw-engineering') {
+      const projects = this.getTableRecords('projects');
+      const assignments = this.getTableRecords('assignments');
+      const employeeSummary = this.getTableRecords('employeeSummary');
+
+      const allProjects = new Set<string>();
+      const allStatuses = new Set<string>();
+      const allEmployees = new Set<string>();
+      const allRoles = new Set<string>();
+
+      projects.forEach((p) => {
+        if (p.project) allProjects.add(p.project);
+        if (p.status) allStatuses.add(p.status);
+      });
+      assignments.forEach((a) => {
+        if (a.project) allProjects.add(a.project);
+        if (a.employee) allEmployees.add(a.employee);
+        if (a.role) allRoles.add(a.role);
+      });
+      employeeSummary.forEach((e) => {
+        if (e.employee) allEmployees.add(e.employee);
+        if (e.role) allRoles.add(e.role);
+      });
+
+      this.projectsList = [...allProjects].sort();
+      this.statusesList = [...allStatuses].sort();
+      this.employeesList = [...allEmployees].sort();
+      this.rolesList = [...allRoles].sort();
+
+      this.selectedProjects = [];
+      this.selectedStatuses = [];
+      this.selectedEmployees = [];
+      this.selectedRoles = [];
+
+      this.updateFilteredSwEngineeringData();
+    } else if (this.data.department === 'outbound-desk') {
+      const calls = this.getTableRecords('calls');
+
+      const allAgents = new Set<string>();
+      const allOutcomes = new Set<string>();
+      const allConnects = new Set<string>();
+      const allDates = new Set<string>();
+
+      calls.forEach((c) => {
+        if (c.agent) allAgents.add(c.agent);
+        if (c.outcome) allOutcomes.add(c.outcome);
+        if (c.connect) allConnects.add(c.connect);
+        if (c.date) {
+          if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+            const [y, m, d] = c.date.slice(0, 10).split('-');
+            allDates.add(`${m}/${d}/${y}`);
+          } else {
+            allDates.add(String(c.date));
+          }
+        }
+      });
+
+      this.agentsList = [...allAgents].sort();
+      this.outcomesList = [...allOutcomes].sort();
+      this.connectsList = [...allConnects].sort();
+      this.datesList = [...allDates].sort();
+
+      this.selectedAgents = [];
+      this.selectedOutcomes = [];
+      this.selectedConnects = [];
+      this.selectedDates = [];
+
+      this.updateFilteredOutboundDeskData();
     } else {
       this.displayedKpis = this.data.kpis || [];
       this.displayedCharts = this.data.charts || [];
@@ -583,6 +1018,14 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.updateFilteredMarketingData();
     } else if (this.data?.department === 'hr-query') {
       this.updateFilteredHrQueryData();
+    } else if (this.data?.department === 'residential-appraisal') {
+      this.updateFilteredResidentialData();
+    } else if (this.data?.department === 'it-operations') {
+      this.updateFilteredItOperationsData();
+    } else if (this.data?.department === 'sw-engineering') {
+      this.updateFilteredSwEngineeringData();
+    } else if (this.data?.department === 'outbound-desk') {
+      this.updateFilteredOutboundDeskData();
     }
   }
 
@@ -594,11 +1037,12 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     const filteredQueries = queriesAll.filter((q) => {
       const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
       const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+      const matchCat = !q.category || !this.selectedCategories.length || this.selectedCategories.includes(q.category);
       const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
       const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
       const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
       const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
-      return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+      return matchYear && matchMonth && matchCat && matchSubCat && matchPrio && matchHand && matchStat;
     });
 
     const totalQueries = filteredQueries.length;
@@ -638,6 +1082,620 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       { id: 'byPriority', title: 'Queries by Priority', type: 'pie', labels: byPriority.map((x) => x[0]), series: [{ name: 'Queries', data: byPriority.map((x) => x[1]) }] },
       { id: 'byStatus', title: 'Queries by Status', type: 'bar', labels: byStatus.map((x) => x[0]), series: [{ name: 'Queries', data: byStatus.map((x) => x[1]) }] },
       { id: 'byHandler', title: 'Queries Handled by HR Team (Top 10)', type: 'pie', labels: byHandler.map((x) => x[0]), series: [{ name: 'Queries', data: byHandler.map((x) => x[1]) }] },
+    ];
+  }
+
+  updateFilteredResidentialData(): void {
+    if (!this.data || this.data.department !== 'residential-appraisal') return;
+
+    const ordersAll = this.getTableRecords('orders');
+    const perfAll = this.getTableRecords('performance');
+    const empAll = this.getTableRecords('employeeSummary');
+
+    const filteredOrders = ordersAll.filter((o) => {
+      const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(o.month);
+      const matchClient = !this.selectedClients.length || this.selectedClients.includes(o.orderedByName);
+      const matchState = !this.selectedStates.length || this.selectedStates.includes(o.state);
+      const matchReport = !this.selectedReportTypes.length || this.selectedReportTypes.includes(o.reportType);
+      const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(o.teamLead);
+      const matchLevel = !this.selectedLevels.length || this.selectedLevels.includes(o.level);
+      const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(o.agent);
+      return matchMonth && matchClient && matchState && matchReport && matchLead && matchLevel && matchAgent;
+    });
+
+    const filteredPerf = perfAll.filter((p) => {
+      const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(p.month);
+      const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(p.teamLead);
+      const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(p.name);
+      return matchMonth && matchLead && matchAgent;
+    });
+
+    // Dynamically aggregate employee summary from filtered performance
+    const empMap = new Map<string, any>();
+    filteredPerf.forEach((p) => {
+      if (!p.name) return;
+      const key = p.name.toLowerCase();
+      if (!empMap.has(key)) {
+        empMap.set(key, {
+          name: p.name,
+          teamLead: p.teamLead,
+          prodMins: 0,
+          nonProdMins: 0,
+          overallMins: 0,
+          prodPcts: [] as number[],
+          utilPcts: [] as number[],
+          l1Count: 0,
+          l2Count: 0,
+          l3Count: 0,
+          l4Count: 0,
+          l5Count: 0,
+          rentalCount: 0,
+          daysActive: 0,
+        });
+      }
+      const item = empMap.get(key);
+      item.prodMins += Number(p.prodMins) || 0;
+      item.nonProdMins += Number(p.nonProdMins) || 0;
+      item.overallMins += Number(p.overallMins) || 0;
+      if (p.overallProdPct !== null && p.overallProdPct > 0) item.prodPcts.push(Number(p.overallProdPct));
+      if (p.overallUtilPct !== null && p.overallUtilPct > 0) item.utilPcts.push(Number(p.overallUtilPct));
+      item.l1Count += Number(p.l1Count) || 0;
+      item.l2Count += Number(p.l2Count) || 0;
+      item.l3Count += Number(p.l3Count) || 0;
+      item.l4Count += Number(p.l4Count) || 0;
+      item.l5Count += Number(p.l5Count) || 0;
+      item.rentalCount += Number(p.rentalCount) || 0;
+      item.daysActive++;
+    });
+
+    const filteredEmp = [...empMap.values()]
+      .map((e) => {
+        const avgProdPct = e.prodPcts.length
+          ? Math.round((e.prodPcts.reduce((a: number, b: number) => a + b, 0) / e.prodPcts.length) * 10) / 10
+          : 0;
+        const avgUtilPct = e.utilPcts.length
+          ? Math.round((e.utilPcts.reduce((a: number, b: number) => a + b, 0) / e.utilPcts.length) * 10) / 10
+          : 0;
+        const totalFilesCompleted = e.l1Count + e.l2Count + e.l3Count + e.l4Count + e.l5Count + e.rentalCount;
+        return {
+          name: e.name,
+          teamLead: e.teamLead,
+          prodHours: Math.round((e.prodMins / 60) * 10) / 10,
+          nonProdHours: Math.round((e.nonProdMins / 60) * 10) / 10,
+          overallHours: Math.round((e.overallMins / 60) * 10) / 10,
+          avgProdPct,
+          avgUtilPct,
+          l1Count: e.l1Count,
+          l2Count: e.l2Count,
+          l3Count: e.l3Count,
+          l4Count: e.l4Count,
+          l5Count: e.l5Count,
+          totalFilesCompleted,
+          daysActive: e.daysActive,
+        };
+      })
+      .sort((a, b) => b.totalFilesCompleted - a.totalFilesCompleted);
+
+    const totalOrders = filteredOrders.length;
+    const totalClients = new Set(filteredOrders.map((o) => o.orderedByName).filter(Boolean)).size;
+    const activeStaff = filteredEmp.length;
+    const totalProdMinutes = filteredPerf.reduce((sum, p) => sum + (Number(p.prodMins) || 0), 0);
+    const totalProdHours = Math.round(totalProdMinutes / 60);
+
+    const validProd = filteredPerf.map((p) => Number(p.overallProdPct)).filter((v) => !isNaN(v) && v > 0);
+    const overallProductivity = validProd.length
+      ? Math.round((validProd.reduce((a, b) => a + b, 0) / validProd.length) * 10) / 10
+      : 0;
+
+    const validUtil = filteredPerf.map((p) => Number(p.overallUtilPct)).filter((v) => !isNaN(v) && v > 0);
+    const overallUtilization = validUtil.length
+      ? Math.round((validUtil.reduce((a, b) => a + b, 0) / validUtil.length) * 10) / 10
+      : 0;
+
+    this.displayedKpis = [
+      { key: 'totalOrders', label: 'TOTAL ORDERS PROCESSED', value: totalOrders, format: 'number' },
+      { key: 'overallProductivity', label: 'OVERALL PRODUCTIVITY %', value: overallProductivity, format: 'percent' },
+      { key: 'overallUtilization', label: 'OVERALL UTILIZATION %', value: overallUtilization, format: 'percent' },
+      { key: 'totalProdHours', label: 'TOTAL PRODUCTION HOURS', value: totalProdHours, format: 'number' },
+      { key: 'activeStaff', label: 'ACTIVE PRODUCTION STAFF', value: activeStaff, format: 'number' },
+      { key: 'totalClients', label: 'CLIENTS & AMCs SERVED', value: totalClients, format: 'number' },
+    ];
+
+    const groupCount = (arr: any[], keyFn: (r: any) => string) => {
+      const map = new Map<string, number>();
+      arr.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const groupSum = (arr: any[], keyFn: (r: any) => string, valFn: (r: any) => number) => {
+      const map = new Map<string, number>();
+      arr.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + (valFn(r) || 0));
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const byClient = groupCount(filteredOrders, (o) => o.orderedByName).slice(0, 10);
+    const byReportType = groupCount(filteredOrders, (o) => o.reportType).slice(0, 8);
+    const byLevel = [
+      ['Level 1', filteredOrders.filter((o) => o.level === 'Level 1').length],
+      ['Level 2', filteredOrders.filter((o) => o.level === 'Level 2').length],
+      ['Level 3', filteredOrders.filter((o) => o.level === 'Level 3').length],
+      ['Level 4', filteredOrders.filter((o) => o.level === 'Level 4').length],
+      ['Level 5', filteredOrders.filter((o) => o.level === 'Level 5').length],
+    ];
+    const byTeamLead = groupSum(filteredPerf, (p) => p.teamLead, (p) => Math.round((Number(p.prodMins) || 0) / 60));
+    const byAgent = filteredEmp.slice(0, 10).map((s) => [s.name, s.totalFilesCompleted]);
+    const byState = groupCount(filteredOrders, (o) => o.state).slice(0, 10);
+
+    this.displayedCharts = [
+      {
+        id: 'ordersByClient',
+        title: 'Appraisal Orders by Client / AMC',
+        type: 'pie',
+        labels: byClient.map((x) => x[0]),
+        series: [{ name: 'Orders', data: byClient.map((x) => x[1]) }],
+      },
+      {
+        id: 'volumeByLevel',
+        title: 'Production Volume by Level',
+        type: 'bar',
+        labels: byLevel.map((x) => x[0]),
+        series: [{ name: 'Orders', data: byLevel.map((x) => x[1]) }],
+      },
+      {
+        id: 'ordersByReportType',
+        title: 'Orders by Appraisal Report Type',
+        type: 'pie',
+        labels: byReportType.map((x) => x[0]),
+        series: [{ name: 'Orders', data: byReportType.map((x) => x[1]) }],
+      },
+      {
+        id: 'topAgents',
+        title: 'Top 10 Agents by Volume Completed',
+        type: 'bar',
+        labels: byAgent.map((x) => x[0]),
+        series: [{ name: 'Files Completed', data: byAgent.map((x) => x[1]) }],
+      },
+      {
+        id: 'productivityByTeamLead',
+        title: 'Production Hours by Team Lead',
+        type: 'pie',
+        labels: byTeamLead.map((x) => x[0]),
+        series: [{ name: 'Hours Logged', data: byTeamLead.map((x) => x[1]) }],
+      },
+      {
+        id: 'ordersByState',
+        title: 'Appraisal Distribution by State',
+        type: 'bar',
+        labels: byState.map((x) => x[0]),
+        series: [{ name: 'Orders', data: byState.map((x) => x[1]) }],
+      },
+    ];
+  }
+
+  updateFilteredItOperationsData(): void {
+    if (!this.data || this.data.department !== 'it-operations') return;
+
+    const itKpiAll = this.getTableRecords('itKpi');
+    const resourcesAll = this.getTableRecords('resources');
+    const projectsAll = this.getTableRecords('projects');
+
+    // 1. Filter IT KPI records
+    const filteredItKpi = itKpiAll.filter((r) => {
+      const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+      return matchCat && matchStat;
+    });
+
+    // 2. Filter Resources
+    const filteredResources = resourcesAll.filter((r) => {
+      const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
+      const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
+      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+      return matchRes && matchAlloc && matchProj && matchStat;
+    });
+
+    // 3. Filter Projects
+    const filteredProjects = projectsAll.filter((p) => {
+      const matchOwner = !this.selectedResources.length || this.selectedResources.includes(p.owner);
+      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+      return matchOwner && matchProj && matchStat;
+    });
+
+    // 4. Update KPIs dynamically
+    const kpis: Kpi[] = [];
+
+    // Critical Resource Availability
+    const infraAvail = filteredItKpi.filter(
+      (r) => r.category.toLowerCase().includes('infra') && !isNaN(parseFloat(r.current))
+    );
+    let critAvailVal = 0;
+    if (infraAvail.length > 0) {
+      const avg =
+        infraAvail.reduce((acc, cur) => {
+          const n = parseFloat(cur.current);
+          return acc + (n <= 1 && n > 0 ? n * 100 : n);
+        }, 0) / infraAvail.length;
+      critAvailVal = Math.round(avg * 10) / 10;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      critAvailVal = (this.data.kpis?.find((k) => k.key === 'criticalAvailability')?.value as number) || 94.8;
+    }
+    kpis.push({
+      key: 'criticalAvailability',
+      label: 'Critical Resource Availability',
+      value: critAvailVal,
+      format: 'percent',
+    });
+
+    // SLA Compliance
+    const slaRow = filteredItKpi.find((r) => r.kpi.toLowerCase().includes('sla'));
+    let slaVal = 0;
+    if (slaRow) {
+      const raw = parseFloat(slaRow.current);
+      slaVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 100;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      slaVal = (this.data.kpis?.find((k) => k.key === 'slaCompliance')?.value as number) || 100;
+    }
+    kpis.push({
+      key: 'slaCompliance',
+      label: 'SLA Compliance',
+      value: slaVal,
+      format: 'percent',
+    });
+
+    // Backup Success Rate
+    const backupRow = filteredItKpi.find((r) => r.kpi.toLowerCase() === 'backup success');
+    let backupVal = 0;
+    if (backupRow) {
+      const raw = parseFloat(backupRow.current);
+      backupVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 100;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      backupVal = (this.data.kpis?.find((k) => k.key === 'backupSuccess')?.value as number) || 100;
+    }
+    kpis.push({
+      key: 'backupSuccess',
+      label: 'Backup Success Rate',
+      value: backupVal,
+      format: 'percent',
+    });
+
+    // Open Support Tickets
+    const ticketRow = filteredItKpi.find((r) => r.kpi.toLowerCase() === 'open tickets');
+    let ticketVal = 0;
+    if (ticketRow) {
+      ticketVal = parseFloat(ticketRow.current) || 0;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      ticketVal = (this.data.kpis?.find((k) => k.key === 'openTickets')?.value as number) || 8;
+    }
+    kpis.push({
+      key: 'openTickets',
+      label: 'Open Support Tickets',
+      value: ticketVal,
+      format: 'number',
+    });
+
+    // Patch Compliance
+    const patchRow = filteredItKpi.find((r) => r.kpi.toLowerCase() === 'patch compliance');
+    let patchVal = 0;
+    if (patchRow) {
+      const raw = parseFloat(patchRow.current);
+      patchVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 90.2;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      patchVal = (this.data.kpis?.find((k) => k.key === 'patchCompliance')?.value as number) || 90.2;
+    }
+    kpis.push({
+      key: 'patchCompliance',
+      label: 'Patch Compliance',
+      value: patchVal,
+      format: 'percent',
+    });
+
+    // Major Outages
+    const outageRow = filteredItKpi.find((r) => r.kpi.toLowerCase().includes('major outages'));
+    let outageVal = 0;
+    if (outageRow) {
+      outageVal = parseFloat(outageRow.current) || 0;
+    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
+      outageVal = (this.data.kpis?.find((k) => k.key === 'majorOutages')?.value as number) || 0;
+    }
+    kpis.push({
+      key: 'majorOutages',
+      label: 'Major Outages',
+      value: outageVal,
+      format: 'number',
+    });
+
+    this.displayedKpis = kpis;
+
+    // 5. Update Charts dynamically
+    // Chart 1: Infrastructure Health
+    const infraItems = filteredItKpi.filter((r) => r.category.toLowerCase().includes('infra'));
+    const infraLabels = infraItems.map((r) => r.kpi);
+    const infraValues = infraItems.map((r) => {
+      const num = parseFloat(r.current);
+      return isNaN(num) ? 100 : num <= 1 && num > 0 ? Math.round(num * 1000) / 10 : num;
+    });
+
+    // Chart 2: Security & Backup Compliance
+    const secItems = filteredItKpi.filter(
+      (r) => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup')
+    );
+    const secNumeric = secItems.filter((r) => !isNaN(parseFloat(r.current)));
+    const secLabels = secNumeric.map((r) => r.kpi);
+    const secValues = secNumeric.map((r) => {
+      const num = parseFloat(r.current);
+      return num <= 1 && num > 0 ? Math.round(num * 1000) / 10 : num;
+    });
+
+    // Chart 3: IT Engineer Utilization
+    const resLabels = filteredResources.map((r) => r.resource);
+    const resValues = filteredResources.map((r) => r.utilizationPct || 0);
+
+    // Chart 4: Active IT Projects
+    const projLabels = filteredProjects.map((p) => p.project);
+    const projPlanned = filteredProjects.map((p) => p.plannedCompletionPct || 0);
+    const projActual = filteredProjects.map((p) => p.actualCompletionPct || 0);
+
+    // Chart 5: Overall IT Health RAG Status
+    const statusCounts: Record<string, number> = {};
+    filteredItKpi.forEach((r) => {
+      const s = r.status || 'Healthy';
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
+
+    const charts: ChartDef[] = [
+      {
+        id: 'infraHealth',
+        title: 'Infrastructure Availability & Health %',
+        type: 'bar',
+        labels: infraLabels.length ? infraLabels : ['No matching items'],
+        series: [{ name: 'Availability %', data: infraValues.length ? infraValues : [0] }],
+      },
+      {
+        id: 'secCompliance',
+        title: 'Security & Backup Compliance Scores %',
+        type: 'bar',
+        labels: secLabels.length ? secLabels : ['No matching items'],
+        series: [{ name: 'Compliance %', data: secValues.length ? secValues : [0] }],
+      },
+      {
+        id: 'resourceUtil',
+        title: 'IT Engineer Utilization %',
+        type: 'bar',
+        labels: resLabels.length ? resLabels : ['No matching engineers'],
+        series: [{ name: 'Utilization %', data: resValues.length ? resValues : [0] }],
+      },
+      {
+        id: 'projectProgress',
+        title: 'Active IT Projects Completion %',
+        type: 'bar',
+        labels: projLabels.length ? projLabels : ['No matching projects'],
+        series: [
+          { name: 'Planned %', data: projPlanned.length ? projPlanned : [0] },
+          { name: 'Actual %', data: projActual.length ? projActual : [0] },
+        ],
+      },
+      {
+        id: 'overallRAG',
+        title: 'Overall IT Health RAG Status',
+        type: 'pie',
+        labels: Object.keys(statusCounts).length ? Object.keys(statusCounts) : ['Healthy'],
+        series: [{ name: 'KPIs', data: Object.values(statusCounts).length ? Object.values(statusCounts) : [0] }],
+      },
+    ];
+
+    this.displayedCharts = charts;
+  }
+
+  updateFilteredSwEngineeringData(): void {
+    if (!this.data || this.data.department !== 'sw-engineering') return;
+
+    const projectsAll = this.getTableRecords('projects');
+    const assignmentsAll = this.getTableRecords('assignments');
+    const employeeSummaryAll = this.getTableRecords('employeeSummary');
+    const defectsAll = this.getTableRecords('defects');
+
+    // 1. Filter assignments by Project, Employee, Role
+    const filteredAssignments = assignmentsAll.filter((a) => {
+      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(a.project);
+      const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(a.employee);
+      const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(a.role);
+      return matchProj && matchEmp && matchRole;
+    });
+
+    // 2. Identify active project names and employees from assignments when cross-filtering
+    const activeProjectNamesFromAssignments = new Set(filteredAssignments.map((a) => a.project));
+    const activeEmployeesFromAssignments = new Set(filteredAssignments.map((a) => a.employee));
+
+    // Filter projects by Project, Status (RAG), and if employee/role is selected, must match assignments
+    const filteredProjects = projectsAll.filter((p) => {
+      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+      const matchEmpOrRole = (!this.selectedEmployees.length && !this.selectedRoles.length) || activeProjectNamesFromAssignments.has(p.project);
+      return matchProj && matchStat && matchEmpOrRole;
+    });
+
+    // Filter employee summary by Employee, Role, and if project is selected, by assignments
+    const filteredEmployeeSummary = employeeSummaryAll.filter((e) => {
+      const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(e.employee);
+      const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(e.role);
+      const matchProj = !this.selectedProjects.length || activeEmployeesFromAssignments.has(e.employee);
+      return matchEmp && matchRole && matchProj;
+    });
+
+    // Filter defects by Project and (if employee selected) assignedTo
+    const filteredDefects = defectsAll.filter((d) => {
+      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(d.project);
+      const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(d.assignedTo);
+      return matchProj && matchEmp;
+    });
+
+    // Helpers
+    const sum = (arr: any[], fn: (r: any) => number) => arr.reduce((a, r) => a + (fn(r) || 0), 0);
+    const avg = (arr: any[], fn: (r: any) => number) => {
+      const vals = arr.map(fn).filter((v) => v !== null && v !== undefined && !isNaN(v));
+      return vals.length ? sum(vals.map((v) => ({ v })), (r) => r.v) / vals.length : 0;
+    };
+    const distinct = (arr: any[], fn: (r: any) => any) => new Set(arr.map(fn).filter(Boolean)).size;
+
+    const totalProjects = filteredProjects.length;
+    const avgPercentComplete = Math.round(avg(filteredProjects, (p) => p.percentComplete) * 10) / 10;
+    const headcount = filteredEmployeeSummary.length || distinct(filteredAssignments, (a) => a.employee);
+    const avgUtilizationPct = Math.round(avg(filteredEmployeeSummary, (e) => e.utilizationPct) * 10) / 10;
+    const billableHours = Math.round(sum(filteredAssignments, (a) => a.billableHours) * 10) / 10;
+    const nonBillableHours = Math.round(sum(filteredAssignments, (a) => a.nonBillableHours) * 10) / 10;
+
+    this.displayedKpis = [
+      { key: 'totalProjects', label: 'Total Projects', value: totalProjects, format: 'number' },
+      { key: 'avgPercentComplete', label: 'Avg % Complete', value: avgPercentComplete, format: 'percent' },
+      { key: 'headcount', label: 'Team Headcount', value: headcount, format: 'number' },
+      { key: 'avgUtilizationPct', label: 'Avg Utilization %', value: avgUtilizationPct, format: 'percent' },
+      { key: 'billableHours', label: 'Billable Hours', value: billableHours, format: 'number' },
+      { key: 'nonBillableHours', label: 'Non-Billable Hours', value: nonBillableHours, format: 'number' },
+    ];
+
+    const groupCount = (arr: any[], keyFn: (r: any) => string) => {
+      const map = new Map<string, number>();
+      arr.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const projectStatusDist = groupCount(filteredProjects, (p) => p.status);
+    const severities = ['Critical', 'High', 'Medium', 'Low'];
+    const openDefects = filteredDefects.filter((d) => d.status !== 'Closed');
+    const defectsBySeverityData = severities.map((s) => openDefects.filter((d) => d.severity === s).length);
+    const slaBreakdown = groupCount(filteredDefects, (d) => d.slaStatus);
+
+    const hoursByEmployee = [...filteredEmployeeSummary]
+      .sort((a, b) => (b.actualHours || 0) - (a.actualHours || 0))
+      .slice(0, 15)
+      .map((e) => [e.employee, e.actualHours || 0] as [string, number]);
+
+    this.displayedCharts = [
+      {
+        id: 'projectStatus',
+        title: 'Project Status Distribution',
+        type: 'pie',
+        labels: projectStatusDist.length ? projectStatusDist.map((x) => x[0]) : ['No Data'],
+        series: [{ name: 'Projects', data: projectStatusDist.length ? projectStatusDist.map((x) => x[1]) : [0] }],
+      },
+      {
+        id: 'defectsBySeverity',
+        title: 'Open Defects by Severity',
+        type: 'bar',
+        labels: severities,
+        series: [{ name: 'Defects', data: defectsBySeverityData }],
+      },
+      {
+        id: 'slaBreakdown',
+        title: 'SLA Status Breakdown',
+        type: 'pie',
+        labels: slaBreakdown.length ? slaBreakdown.map((x) => x[0]) : ['No Data'],
+        series: [{ name: 'Defects', data: slaBreakdown.length ? slaBreakdown.map((x) => x[1]) : [0] }],
+      },
+      {
+        id: 'hoursByEmployee',
+        title: 'Actual Hours by Employee',
+        type: 'bar',
+        labels: hoursByEmployee.length ? hoursByEmployee.map((x) => x[0]) : ['No Data'],
+        series: [{ name: 'Hours', data: hoursByEmployee.length ? hoursByEmployee.map((x) => x[1]) : [0] }],
+      },
+    ];
+  }
+
+  updateFilteredOutboundDeskData(): void {
+    if (!this.data || this.data.department !== 'outbound-desk') return;
+
+    const callsAll = this.getTableRecords('calls');
+
+    const filteredCalls = callsAll.filter((c) => {
+      const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(c.agent);
+      const matchOutcome = !this.selectedOutcomes.length || this.selectedOutcomes.includes(c.outcome);
+      const matchConnect = !this.selectedConnects.length || this.selectedConnects.includes(c.connect);
+
+      let dateFormatted = c.date;
+      if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+        const [y, m, d] = c.date.slice(0, 10).split('-');
+        dateFormatted = `${m}/${d}/${y}`;
+      }
+      const matchDate = !this.selectedDates.length || this.selectedDates.includes(dateFormatted) || this.selectedDates.includes(c.date);
+
+      return matchAgent && matchOutcome && matchConnect && matchDate;
+    });
+
+    const totalAttempts = filteredCalls.length;
+    const uniqueLeads = filteredCalls.filter((c) => c.isFirstForLead).length;
+    const connected = filteredCalls.filter((c) => c.connect === 'Yes').length;
+    const voicemail = filteredCalls.filter((c) => c.outcome === 'Voicemail').length;
+    const agentsCount = new Set(filteredCalls.map((c) => c.agent).filter(Boolean)).size;
+
+    this.displayedKpis = [
+      { key: 'attempts', label: 'Dial Attempts Logged', value: totalAttempts, format: 'number' },
+      { key: 'uniqueLeads', label: 'Unique Leads Worked', value: uniqueLeads, format: 'number' },
+      { key: 'connectRate', label: 'Connect Rate', value: totalAttempts ? Math.round((connected / totalAttempts) * 1000) / 10 : 0, format: 'percent' },
+      { key: 'liveConversations', label: 'Live Conversations', value: connected, format: 'number' },
+      { key: 'voicemailRate', label: 'Voicemail Rate', value: totalAttempts ? Math.round((voicemail / totalAttempts) * 1000) / 10 : 0, format: 'percent' },
+      { key: 'agents', label: 'Active Agents', value: agentsCount, format: 'number' },
+    ];
+
+    const groupCount = (arr: any[], keyFn: (r: any) => string) => {
+      const map = new Map<string, number>();
+      arr.forEach((r) => {
+        const k = keyFn(r) || 'Unspecified';
+        map.set(k, (map.get(k) || 0) + 1);
+      });
+      return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    };
+
+    const byDayRaw = groupCount(filteredCalls, (r) => r.date).sort((a, b) => (a[0] > b[0] ? 1 : -1));
+    const byDayFormatted = byDayRaw.map(([dStr, cnt]) => {
+      let label = dStr;
+      if (typeof dStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dStr)) {
+        const [y, m, d] = dStr.slice(0, 10).split('-');
+        label = `${m}/${d}/${y}`;
+      }
+      return [label, cnt] as [string, number];
+    });
+
+    const byAgent = groupCount(filteredCalls, (r) => r.agent);
+
+    const outcomeGroups = groupCount(filteredCalls, (r) => r.outcome);
+    const byOutcome = outcomeGroups.length > 6
+      ? ([...outcomeGroups.slice(0, 5), ['Other', outcomeGroups.slice(5).reduce((a, x) => a + x[1], 0)]] as [string, number][])
+      : outcomeGroups;
+
+    this.displayedCharts = [
+      {
+        id: 'byDay',
+        title: 'Dial Attempts by Day',
+        type: 'bar',
+        labels: byDayFormatted.length ? byDayFormatted.map((x) => x[0]) : ['No Calls'],
+        series: [{ name: 'Attempts', data: byDayFormatted.length ? byDayFormatted.map((x) => x[1]) : [0] }],
+      },
+      {
+        id: 'byOutcome',
+        title: 'Call Outcomes (Combined)',
+        type: 'pie',
+        labels: byOutcome.length ? byOutcome.map((x) => x[0]) : ['No Data'],
+        series: [{ name: 'Attempts', data: byOutcome.length ? byOutcome.map((x) => x[1]) : [0] }],
+      },
+      {
+        id: 'byAgent',
+        title: 'Dial Attempts by Agent',
+        type: 'bar',
+        labels: byAgent.length ? byAgent.map((x) => x[0]) : ['No Agents'],
+        series: [{ name: 'Attempts', data: byAgent.length ? byAgent.map((x) => x[1]) : [0] }],
+      },
     ];
   }
 
@@ -962,6 +2020,16 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     if (val === null || val === undefined || val === '') return '–';
     if (PERCENT_KEYS.has(col) && typeof val === 'number') return `${val}%`;
     if (typeof val === 'number') return val.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+      const [y, m, d] = val.slice(0, 10).split('-');
+      return `${m}/${d}/${y}`;
+    }
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      const m = String(val.getMonth() + 1).padStart(2, '0');
+      const d = String(val.getDate()).padStart(2, '0');
+      const y = val.getFullYear();
+      return `${m}/${d}/${y}`;
+    }
     return String(val);
   }
 
@@ -997,60 +2065,94 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     const dep = this.data.department;
 
     if (dep === 'sw-engineering') {
-      const projects = this.getTableRecords('projects');
-      const assignments = this.getTableRecords('assignments');
-      const employeeSummary = this.getTableRecords('employeeSummary');
-      const defects = this.getTableRecords('defects');
+      const projectsAll = this.getTableRecords('projects');
+      const assignmentsAll = this.getTableRecords('assignments');
+      const employeeSummaryAll = this.getTableRecords('employeeSummary');
+      const defectsAll = this.getTableRecords('defects');
+
+      const filteredAssignments = assignmentsAll.filter((a) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(a.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(a.employee);
+        const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(a.role);
+        return matchProj && matchEmp && matchRole;
+      });
+
+      const activeProjectNamesFromAssignments = new Set(filteredAssignments.map((a) => a.project));
+      const activeEmployeesFromAssignments = new Set(filteredAssignments.map((a) => a.employee));
+
+      const filteredProjects = projectsAll.filter((p) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+        const matchEmpOrRole = (!this.selectedEmployees.length && !this.selectedRoles.length) || activeProjectNamesFromAssignments.has(p.project);
+        return matchProj && matchStat && matchEmpOrRole;
+      });
+
+      const filteredEmployeeSummary = employeeSummaryAll.filter((e) => {
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(e.employee);
+        const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(e.role);
+        const matchProj = !this.selectedProjects.length || activeEmployeesFromAssignments.has(e.employee);
+        return matchEmp && matchRole && matchProj;
+      });
+
+      const filteredDefects = defectsAll.filter((d) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(d.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(d.assignedTo);
+        return matchProj && matchEmp;
+      });
+
+      const filterSubtitle = `Filters Applied — Project: ${this.selectedProjects.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Resource: ${this.selectedEmployees.join(', ') || 'All'}, Role: ${this.selectedRoles.join(', ') || 'All'}`;
 
       switch (kpi.key) {
         case 'totalProjects':
         case 'avgPercentComplete':
         case 'projectHoursVariancePct':
-          this.showDataModal(`All Projects (${projects.length})`, projects);
+          this.showDataModal(`Projects (${filteredProjects.length})`, filteredProjects, filterSubtitle);
           break;
         case 'onTrack':
-          this.showDataModal(`On Track Projects (${kpi.value})`, projects.filter((p) => p.status === 'On Track'));
+          this.showDataModal(`On Track Projects (${kpi.value})`, filteredProjects.filter((p) => p.status === 'On Track'), filterSubtitle);
           break;
         case 'atRisk':
-          this.showDataModal(`At Risk Projects (${kpi.value})`, projects.filter((p) => p.status === 'At Risk'));
+          this.showDataModal(`At Risk Projects (${kpi.value})`, filteredProjects.filter((p) => p.status === 'At Risk'), filterSubtitle);
           break;
         case 'delayed':
-          this.showDataModal(`Delayed Projects (${kpi.value})`, projects.filter((p) => p.status === 'Delayed'));
+          this.showDataModal(`Delayed Projects (${kpi.value})`, filteredProjects.filter((p) => p.status === 'Delayed'), filterSubtitle);
           break;
         case 'headcount':
         case 'avgAllocationPct':
-          this.showDataModal(`Team Members (${employeeSummary.length})`, employeeSummary);
+          this.showDataModal(`Team Members (${filteredEmployeeSummary.length})`, filteredEmployeeSummary, filterSubtitle);
           break;
         case 'avgUtilizationPct':
           this.showDataModal(
-            `Resource Utilization (${employeeSummary.length})`,
-            employeeSummary.map((e) => ({
+            `Resource Utilization (${filteredEmployeeSummary.length})`,
+            filteredEmployeeSummary.map((e) => ({
               employee: e.employee,
               role: e.role,
               plannedHours: e.plannedHours,
               actualHours: e.actualHours,
               utilizationPct: e.utilizationPct,
-            }))
+              allocationStatus: e.allocationStatus,
+            })),
+            filterSubtitle
           );
           break;
         case 'billableHours':
-          this.showDataModal(`Billable Resource Assignments`, assignments.filter((a) => (a.billableHours || 0) > 0));
+          this.showDataModal(`Billable Resource Assignments`, filteredAssignments.filter((a) => (a.billableHours || 0) > 0), filterSubtitle);
           break;
         case 'nonBillableHours':
-          this.showDataModal(`Non-Billable Resource Assignments`, assignments.filter((a) => (a.nonBillableHours || 0) > 0));
+          this.showDataModal(`Non-Billable Resource Assignments`, filteredAssignments.filter((a) => (a.nonBillableHours || 0) > 0), filterSubtitle);
           break;
         case 'totalDefects':
         case 'slaCompliancePct':
-          this.showDataModal(`Defects Logged (${defects.length})`, defects);
+          this.showDataModal(`Defects Logged (${filteredDefects.length})`, filteredDefects, filterSubtitle);
           break;
         case 'openDefects':
-          this.showDataModal(`Open Defects (${kpi.value})`, defects.filter((d) => d.status !== 'Closed'));
+          this.showDataModal(`Open Defects (${kpi.value})`, filteredDefects.filter((d) => d.status !== 'Closed'), filterSubtitle);
           break;
         case 'criticalOpen':
-          this.showDataModal(`Critical & Open Defects (${kpi.value})`, defects.filter((d) => d.severity === 'Critical' && d.status !== 'Closed'));
+          this.showDataModal(`Critical & Open Defects (${kpi.value})`, filteredDefects.filter((d) => d.severity === 'Critical' && d.status !== 'Closed'), filterSubtitle);
           break;
         default:
-          this.showDataModal(kpi.label, this.data.tables[0]?.records || []);
+          this.showDataModal(kpi.label, filteredProjects, filterSubtitle);
           break;
       }
     } else if (dep === 'marketing') {
@@ -1194,105 +2296,148 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           break;
       }
     } else if (dep === 'outbound-desk') {
-      const calls = this.getTableRecords('calls');
+      const callsAll = this.getTableRecords('calls');
+      const filteredCalls = callsAll.filter((c) => {
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(c.agent);
+        const matchOutcome = !this.selectedOutcomes.length || this.selectedOutcomes.includes(c.outcome);
+        const matchConnect = !this.selectedConnects.length || this.selectedConnects.includes(c.connect);
+        let dateFormatted = c.date;
+        if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+          const [y, m, d] = c.date.slice(0, 10).split('-');
+          dateFormatted = `${m}/${d}/${y}`;
+        }
+        const matchDate = !this.selectedDates.length || this.selectedDates.includes(dateFormatted) || this.selectedDates.includes(c.date);
+        return matchAgent && matchOutcome && matchConnect && matchDate;
+      });
+
+      const filterSubtitle = `Filters Applied — Agent: ${this.selectedAgents.join(', ') || 'All'}, Outcome: ${this.selectedOutcomes.join(', ') || 'All'}, Connected: ${this.selectedConnects.join(', ') || 'All'}, Date: ${this.selectedDates.join(', ') || 'All'}`;
+
       switch (kpi.key) {
         case 'agents':
-          this.showDataModal(`Active Agents (${kpi.value})`, this.getAgentsSummary(calls));
+          this.showDataModal(`Active Agents (${kpi.value})`, this.getAgentsSummary(filteredCalls), filterSubtitle);
           break;
         case 'uniqueLeads':
-          this.showDataModal(`Unique Leads Worked (${kpi.value})`, calls.filter((c) => c.isFirstForLead));
+          this.showDataModal(`Unique Leads Worked (${kpi.value})`, filteredCalls.filter((c) => c.isFirstForLead), filterSubtitle);
           break;
         case 'connectRate':
         case 'liveConversations':
-          this.showDataModal(`Connected Calls (${kpi.value})`, calls.filter((c) => c.connect === 'Yes'));
+          this.showDataModal(`Connected Calls (${kpi.value})`, filteredCalls.filter((c) => c.connect === 'Yes'), filterSubtitle);
           break;
         case 'voicemailRate':
-          this.showDataModal(`Voicemail Attempts`, calls.filter((c) => c.outcome === 'Voicemail'));
+          this.showDataModal(`Voicemail Attempts`, filteredCalls.filter((c) => c.outcome === 'Voicemail'), filterSubtitle);
           break;
         default:
-          this.showDataModal(`Call Attempts (${calls.length})`, calls);
+          this.showDataModal(`Call Attempts (${filteredCalls.length})`, filteredCalls, filterSubtitle);
           break;
       }
     } else if (dep === 'it-operations') {
-      const itKpi = this.getTableRecords('itKpi');
-      const resources = this.getTableRecords('resources');
-      const projects = this.getTableRecords('projects');
+      const itKpiAll = this.getTableRecords('itKpi');
+      const resourcesAll = this.getTableRecords('resources');
+      const projectsAll = this.getTableRecords('projects');
+
+      const filteredItKpi = itKpiAll.filter((r) => {
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchCat && matchStat;
+      });
+
+      const filteredResources = resourcesAll.filter((r) => {
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
+        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchRes && matchAlloc && matchProj && matchStat;
+      });
+
+      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
 
       switch (kpi.key) {
         case 'criticalAvailability':
           this.showDataModal(
             `Critical Resource Availability`,
-            itKpi.filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
+            filteredItKpi.filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'slaCompliance':
           this.showDataModal(
             `SLA Compliance`,
-            itKpi.filter(r => r.kpi.toLowerCase().includes('sla') || r.category.toLowerCase().includes('oper')).map(r => ({
+            filteredItKpi.filter(r => r.kpi.toLowerCase().includes('sla') || r.category.toLowerCase().includes('oper')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'openTickets':
           this.showDataModal(
             `Support Tickets & Operations`,
-            itKpi.filter(r => r.category.toLowerCase().includes('oper') || r.kpi.toLowerCase().includes('ticket')).map(r => ({
+            filteredItKpi.filter(r => r.category.toLowerCase().includes('oper') || r.kpi.toLowerCase().includes('ticket')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'backupSuccess':
           this.showDataModal(
             `Backup Success Rate`,
-            itKpi.filter(r => r.category.toLowerCase().includes('backup')).map(r => ({
+            filteredItKpi.filter(r => r.category.toLowerCase().includes('backup')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'patchCompliance':
           this.showDataModal(
             `Patch Compliance & Security`,
-            itKpi.filter(r => r.category.toLowerCase().includes('sec')).map(r => ({
+            filteredItKpi.filter(r => r.category.toLowerCase().includes('sec')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         case 'majorOutages':
           this.showDataModal(
             `Major Outages & Critical Issues`,
-            itKpi.filter(r => r.category.toLowerCase().includes('critical') || r.kpi.toLowerCase().includes('outage')).map(r => ({
+            filteredItKpi.filter(r => r.category.toLowerCase().includes('critical') || r.kpi.toLowerCase().includes('outage')).map(r => ({
               kpi: r.kpi,
+              category: r.category,
               target: r.target,
               current: r.current,
               status: r.status,
-            }))
+            })),
+            filterSubtitle
           );
           break;
         default:
-          this.showDataModal(`IT Infrastructure & Security Matrix`, itKpi.map(r => ({
-            category: r.category,
+          this.showDataModal(`IT Infrastructure & Security Matrix`, filteredItKpi.map(r => ({
             kpi: r.kpi,
+            category: r.category,
             target: r.target,
             current: r.current,
             status: r.status,
-          })));
+          })), filterSubtitle);
           break;
       }
     } else if (dep === 'hr-query') {
@@ -1300,14 +2445,15 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       const queries = queriesAll.filter((q) => {
         const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
         const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchCat = !q.category || !this.selectedCategories.length || this.selectedCategories.includes(q.category);
         const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
         const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
         const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
         const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
-        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+        return matchYear && matchMonth && matchCat && matchSubCat && matchPrio && matchHand && matchStat;
       });
 
-      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
 
       switch (kpi.key) {
         case 'completed':
@@ -1326,10 +2472,181 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           this.showDataModal(`HR Queries (${queries.length})`, queries, filterSubtitle);
           break;
       }
+    } else if (dep === 'residential-appraisal') {
+      const ordersAll = this.getTableRecords('orders');
+      const perfAll = this.getTableRecords('performance');
+
+      const filteredOrders = ordersAll.filter((o) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(o.month);
+        const matchClient = !this.selectedClients.length || this.selectedClients.includes(o.orderedByName);
+        const matchState = !this.selectedStates.length || this.selectedStates.includes(o.state);
+        const matchReport = !this.selectedReportTypes.length || this.selectedReportTypes.includes(o.reportType);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(o.teamLead);
+        const matchLevel = !this.selectedLevels.length || this.selectedLevels.includes(o.level);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(o.agent);
+        return matchMonth && matchClient && matchState && matchReport && matchLead && matchLevel && matchAgent;
+      });
+
+      const filteredPerf = perfAll.filter((p) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(p.month);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(p.teamLead);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(p.name);
+        return matchMonth && matchLead && matchAgent;
+      });
+
+      const empMap = new Map<string, any>();
+      filteredPerf.forEach((p) => {
+        if (!p.name) return;
+        const key = p.name.toLowerCase();
+        if (!empMap.has(key)) {
+          empMap.set(key, {
+            name: p.name,
+            teamLead: p.teamLead,
+            prodMins: 0,
+            nonProdMins: 0,
+            overallMins: 0,
+            prodPcts: [] as number[],
+            utilPcts: [] as number[],
+            l1Count: 0,
+            l2Count: 0,
+            l3Count: 0,
+            l4Count: 0,
+            l5Count: 0,
+            rentalCount: 0,
+            daysActive: 0,
+          });
+        }
+        const item = empMap.get(key);
+        item.prodMins += Number(p.prodMins) || 0;
+        item.nonProdMins += Number(p.nonProdMins) || 0;
+        item.overallMins += Number(p.overallMins) || 0;
+        if (p.overallProdPct !== null && p.overallProdPct > 0) item.prodPcts.push(Number(p.overallProdPct));
+        if (p.overallUtilPct !== null && p.overallUtilPct > 0) item.utilPcts.push(Number(p.overallUtilPct));
+        item.l1Count += Number(p.l1Count) || 0;
+        item.l2Count += Number(p.l2Count) || 0;
+        item.l3Count += Number(p.l3Count) || 0;
+        item.l4Count += Number(p.l4Count) || 0;
+        item.l5Count += Number(p.l5Count) || 0;
+        item.rentalCount += Number(p.rentalCount) || 0;
+        item.daysActive++;
+      });
+
+      const filteredEmp = [...empMap.values()]
+        .map((e) => {
+          const avgProdPct = e.prodPcts.length
+            ? Math.round((e.prodPcts.reduce((a: number, b: number) => a + b, 0) / e.prodPcts.length) * 10) / 10
+            : 0;
+          const avgUtilPct = e.utilPcts.length
+            ? Math.round((e.utilPcts.reduce((a: number, b: number) => a + b, 0) / e.utilPcts.length) * 10) / 10
+            : 0;
+          const totalFilesCompleted = e.l1Count + e.l2Count + e.l3Count + e.l4Count + e.l5Count + e.rentalCount;
+          return {
+            name: e.name,
+            teamLead: e.teamLead,
+            prodHours: Math.round((e.prodMins / 60) * 10) / 10,
+            nonProdHours: Math.round((e.nonProdMins / 60) * 10) / 10,
+            overallHours: Math.round((e.overallMins / 60) * 10) / 10,
+            avgProdPct,
+            avgUtilPct,
+            l1Count: e.l1Count,
+            l2Count: e.l2Count,
+            l3Count: e.l3Count,
+            l4Count: e.l4Count,
+            l5Count: e.l5Count,
+            totalFilesCompleted,
+            daysActive: e.daysActive,
+          };
+        })
+        .sort((a, b) => b.totalFilesCompleted - a.totalFilesCompleted);
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Client: ${this.selectedClients.join(', ') || 'All'}, State: ${this.selectedStates.join(', ') || 'All'}, Report: ${this.selectedReportTypes.join(', ') || 'All'}, Level: ${this.selectedLevels.join(', ') || 'All'}, Team Lead: ${this.selectedTeamLeads.join(', ') || 'All'}, Agent: ${this.selectedAgents.join(', ') || 'All'}`;
+
+      switch (kpi.key) {
+        case 'totalOrders':
+          this.showDataModal(`Appraisal Orders (${filteredOrders.length})`, filteredOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+          break;
+        case 'overallProductivity':
+        case 'overallUtilization':
+        case 'totalProdHours':
+          this.showDataModal(`Production Logs (${filteredPerf.length})`, filteredPerf.map((p) => this.toCleanPerformanceRecord(p)), filterSubtitle);
+          break;
+        case 'activeStaff':
+          this.showDataModal(`Active Staff Performance (${filteredEmp.length})`, filteredEmp.map((e) => this.toCleanEmployeeRecord(e)), filterSubtitle);
+          break;
+        case 'totalClients':
+          this.showDataModal(`Clients & AMCs Served`, this.getResidentialClientsSummary(filteredOrders), filterSubtitle);
+          break;
+        default:
+          this.showDataModal(kpi.label, filteredOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+          break;
+      }
     }
   }
 
+  private toCleanOrderRecord(o: any) {
+    return {
+      fileNumber: o.fileNumber,
+      orderedByName: o.orderedByName,
+      reportType: o.reportType,
+      level: o.level,
+      agent: o.agent,
+      teamLead: o.teamLead,
+      status: o.status,
+      dueDate: o.dueDate,
+      productionDate: o.productionDate,
+      address: o.address,
+      state: o.state,
+    };
+  }
+
+  private toCleanPerformanceRecord(p: any) {
+    return {
+      date: p.date,
+      name: p.name,
+      teamLead: p.teamLead,
+      empId: p.empId,
+      prodHours: Math.round(((p.prodMins || 0) / 60) * 10) / 10,
+      nonProdHours: Math.round(((p.nonProdMins || 0) / 60) * 10) / 10,
+      actualProdPct: p.actualProdPct,
+      overallProdPct: p.overallProdPct,
+      overallUtilPct: p.overallUtilPct,
+    };
+  }
+
+  private toCleanEmployeeRecord(e: any) {
+    return {
+      name: e.name,
+      teamLead: e.teamLead,
+      totalFilesCompleted: e.totalFilesCompleted,
+      prodHours: e.prodHours,
+      nonProdHours: e.nonProdHours,
+      avgProdPct: e.avgProdPct,
+      avgUtilPct: e.avgUtilPct,
+      daysActive: e.daysActive,
+    };
+  }
+
   // --- Aggregation Summaries for Particular Data Views --------------------
+
+  private getResidentialClientsSummary(orders: any[]): any[] {
+    const map = new Map<string, { client: string; totalOrders: number; states: Set<string>; reportTypes: Set<string> }>();
+    orders.forEach((o) => {
+      const c = o.orderedByName || 'Unknown';
+      const entry = map.get(c) || { client: c, totalOrders: 0, states: new Set(), reportTypes: new Set() };
+      entry.totalOrders += 1;
+      if (o.state) entry.states.add(o.state);
+      if (o.reportType) entry.reportTypes.add(o.reportType);
+      map.set(c, entry);
+    });
+    return [...map.values()]
+      .map((e) => ({
+        orderedByName: e.client,
+        totalOrders: e.totalOrders,
+        statesCovered: e.states.size,
+        reportTypesCount: e.reportTypes.size,
+      }))
+      .sort((a, b) => b.totalOrders - a.totalOrders);
+  }
 
   private getClientsSummary(leads: any[]): any[] {
     const map = new Map<string, { client: string; leadsGenerated: number; states: Set<string>; counties: Set<string>; doneResearch: number }>();
@@ -1474,24 +2791,47 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     const dep = this.data.department;
 
     if (dep === 'sw-engineering') {
-      const projects = this.getTableRecords('projects');
-      const assignments = this.getTableRecords('assignments');
-      const defects = this.getTableRecords('defects');
+      const projectsAll = this.getTableRecords('projects');
+      const assignmentsAll = this.getTableRecords('assignments');
+      const employeeSummaryAll = this.getTableRecords('employeeSummary');
+      const defectsAll = this.getTableRecords('defects');
+
+      const filteredAssignments = assignmentsAll.filter((a) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(a.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(a.employee);
+        const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(a.role);
+        return matchProj && matchEmp && matchRole;
+      });
+
+      const activeProjectNamesFromAssignments = new Set(filteredAssignments.map((a) => a.project));
+
+      const filteredProjects = projectsAll.filter((p) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+        const matchEmpOrRole = (!this.selectedEmployees.length && !this.selectedRoles.length) || activeProjectNamesFromAssignments.has(p.project);
+        return matchProj && matchStat && matchEmpOrRole;
+      });
+
+      const filteredDefects = defectsAll.filter((d) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(d.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(d.assignedTo);
+        return matchProj && matchEmp;
+      });
+
+      const filterSubtitle = `Filters Applied — Project: ${this.selectedProjects.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Resource: ${this.selectedEmployees.join(', ') || 'All'}, Role: ${this.selectedRoles.join(', ') || 'All'}`;
 
       if (event.chartId === 'projectStatus') {
-        const filtered = projects.filter((p) => p.status === event.label);
-        this.showDataModal(`Projects: ${event.label} (${filtered.length})`, filtered);
+        const filtered = filteredProjects.filter((p) => p.status === event.label);
+        this.showDataModal(`Projects: ${event.label} (${filtered.length})`, filtered, filterSubtitle);
       } else if (event.chartId === 'defectsBySeverity') {
-        const filtered = defects.filter((d) => d.severity === event.label && d.status !== 'Closed');
-        if (filtered.length > 0) {
-          this.showDataModal(`Open Defects: ${event.label} Severity (${filtered.length})`, filtered);
-        }
+        const filtered = filteredDefects.filter((d) => d.severity === event.label && d.status !== 'Closed');
+        this.showDataModal(`Open Defects: ${event.label} Severity (${filtered.length})`, filtered, filterSubtitle);
       } else if (event.chartId === 'slaBreakdown') {
-        const filtered = defects.filter((d) => d.slaStatus === event.label);
-        this.showDataModal(`Defects: SLA ${event.label} (${filtered.length})`, filtered);
+        const filtered = filteredDefects.filter((d) => d.slaStatus === event.label);
+        this.showDataModal(`Defects: SLA ${event.label} (${filtered.length})`, filtered, filterSubtitle);
       } else if (event.chartId === 'hoursByEmployee') {
-        const filtered = assignments.filter((a) => a.employee === event.label);
-        this.showDataModal(`Resource Assignments: ${event.label} (${filtered.length})`, filtered);
+        const filtered = filteredAssignments.filter((a) => a.employee === event.label);
+        this.showDataModal(`Resource Assignments: ${event.label} (${filtered.length})`, filtered, filterSubtitle);
       }
     } else if (dep === 'marketing') {
       const leadsAll = this.getTableRecords('leads');
@@ -1545,40 +2885,99 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         this.showDataModal(`Hours for Employee: ${event.label}`, utilization.filter((u) => u.employee === event.label), filterSubtitle);
       }
     } else if (dep === 'outbound-desk') {
-      const calls = this.getTableRecords('calls');
+      const callsAll = this.getTableRecords('calls');
+      const filteredCalls = callsAll.filter((c) => {
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(c.agent);
+        const matchOutcome = !this.selectedOutcomes.length || this.selectedOutcomes.includes(c.outcome);
+        const matchConnect = !this.selectedConnects.length || this.selectedConnects.includes(c.connect);
+        let dateFormatted = c.date;
+        if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+          const [y, m, d] = c.date.slice(0, 10).split('-');
+          dateFormatted = `${m}/${d}/${y}`;
+        }
+        const matchDate = !this.selectedDates.length || this.selectedDates.includes(dateFormatted) || this.selectedDates.includes(c.date);
+        return matchAgent && matchOutcome && matchConnect && matchDate;
+      });
+
+      const filterSubtitle = `Filters Applied — Agent: ${this.selectedAgents.join(', ') || 'All'}, Outcome: ${this.selectedOutcomes.join(', ') || 'All'}, Connected: ${this.selectedConnects.join(', ') || 'All'}, Date: ${this.selectedDates.join(', ') || 'All'}`;
+
       if (event.chartId === 'byDay') {
-        this.showDataModal(`Calls on Date: ${event.label}`, calls.filter((c) => c.date === event.label));
+        const filtered = filteredCalls.filter((c) => {
+          let df = c.date;
+          if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+            const [y, m, d] = c.date.slice(0, 10).split('-');
+            df = `${m}/${d}/${y}`;
+          }
+          return c.date === event.label || df === event.label;
+        });
+        this.showDataModal(`Calls on Date: ${event.label}`, filtered, filterSubtitle);
       } else if (event.chartId === 'byOutcome') {
-        this.showDataModal(`Calls with Outcome: ${event.label}`, calls.filter((c) => c.outcome === event.label));
+        if (event.label === 'Other') {
+          const outcomeGroups = new Map<string, number>();
+          filteredCalls.forEach((c) => {
+            const oc = c.outcome || 'Unspecified';
+            outcomeGroups.set(oc, (outcomeGroups.get(oc) || 0) + 1);
+          });
+          const top5 = new Set([...outcomeGroups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map((x) => x[0]));
+          const filtered = filteredCalls.filter((c) => !top5.has(c.outcome));
+          this.showDataModal(`Calls with Other Outcomes`, filtered, filterSubtitle);
+        } else {
+          this.showDataModal(`Calls with Outcome: ${event.label}`, filteredCalls.filter((c) => c.outcome === event.label), filterSubtitle);
+        }
       } else if (event.chartId === 'byAgent') {
-        this.showDataModal(`Calls for Agent: ${event.label}`, calls.filter((c) => c.agent === event.label));
+        this.showDataModal(`Calls for Agent: ${event.label}`, filteredCalls.filter((c) => c.agent === event.label), filterSubtitle);
       }
     } else if (dep === 'it-operations') {
-      const itKpi = this.getTableRecords('itKpi');
-      const resources = this.getTableRecords('resources');
-      const projects = this.getTableRecords('projects');
+      const itKpiAll = this.getTableRecords('itKpi');
+      const resourcesAll = this.getTableRecords('resources');
+      const projectsAll = this.getTableRecords('projects');
+
+      const filteredItKpi = itKpiAll.filter((r) => {
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchCat && matchStat;
+      });
+
+      const filteredResources = resourcesAll.filter((r) => {
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
+        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchRes && matchAlloc && matchProj && matchStat;
+      });
+
+      const filteredProjects = projectsAll.filter((p) => {
+        const matchOwner = !this.selectedResources.length || this.selectedResources.includes(p.owner);
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+        return matchOwner && matchProj && matchStat;
+      });
+
+      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
 
       if (event.chartId === 'infraHealth') {
-        const match = itKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
-        const list = match.length ? match : itKpi.filter(r => r.category.toLowerCase().includes('infra'));
+        const match = filteredItKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : filteredItKpi.filter(r => r.category.toLowerCase().includes('infra'));
         this.showDataModal(`Infrastructure: ${event.label}`, list.map(r => ({
           kpi: r.kpi,
+          category: r.category,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (event.chartId === 'secCompliance') {
-        const match = itKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
-        const list = match.length ? match : itKpi.filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup'));
+        const match = filteredItKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : filteredItKpi.filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup'));
         this.showDataModal(`Security / Backup: ${event.label}`, list.map(r => ({
           kpi: r.kpi,
+          category: r.category,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (event.chartId === 'resourceUtil') {
-        const match = resources.filter((r) => r.resource.toLowerCase() === event.label.toLowerCase());
-        const list = match.length ? match : resources;
+        const match = filteredResources.filter((r) => r.resource.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : filteredResources;
         this.showDataModal(`Resource Details: ${event.label}`, list.map(r => ({
           resource: r.resource,
           role: r.role,
@@ -1588,10 +2987,10 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           actualHours: r.actualHours,
           utilizationPct: r.utilizationPct,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (event.chartId === 'projectProgress') {
-        const match = projects.filter((p) => p.project.toLowerCase() === event.label.toLowerCase());
-        const list = match.length ? match : projects;
+        const match = filteredProjects.filter((p) => p.project.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : filteredProjects;
         this.showDataModal(`Project Details: ${event.label}`, list.map(p => ({
           project: p.project,
           owner: p.owner,
@@ -1601,30 +3000,31 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           actualCompletionPct: p.actualCompletionPct,
           scheduleVariancePct: p.scheduleVariancePct,
           status: p.status,
-        })));
+        })), filterSubtitle);
       } else if (event.chartId === 'overallRAG') {
-        const filtered = itKpi.filter((r) => r.status.toLowerCase() === event.label.toLowerCase()).map(r => ({
+        const filtered = filteredItKpi.filter((r) => r.status.toLowerCase() === event.label.toLowerCase()).map(r => ({
           category: r.category,
           kpi: r.kpi,
           target: r.target,
           current: r.current,
           status: r.status,
         }));
-        this.showDataModal(`IT Components (${event.label} Status - ${filtered.length})`, filtered);
+        this.showDataModal(`IT Components (${event.label} Status - ${filtered.length})`, filtered, filterSubtitle);
       }
     } else if (dep === 'hr-query') {
       const queriesAll = this.getTableRecords('queries');
       const queries = queriesAll.filter((q) => {
         const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
         const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchCat = !q.category || !this.selectedCategories.length || this.selectedCategories.includes(q.category);
         const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
         const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
         const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
         const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
-        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+        return matchYear && matchMonth && matchCat && matchSubCat && matchPrio && matchHand && matchStat;
       });
 
-      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
 
       if (event.chartId === 'byCategory') {
         this.showDataModal(`Queries in Category: ${event.label}`, queries.filter((q) => q.category === event.label), filterSubtitle);
@@ -1637,6 +3037,49 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       } else if (event.chartId === 'byHandler') {
         this.showDataModal(`Queries Handled by: ${event.label}`, queries.filter((q) => q.assistancePerson === event.label), filterSubtitle);
       }
+    } else if (dep === 'residential-appraisal') {
+      const ordersAll = this.getTableRecords('orders');
+      const perfAll = this.getTableRecords('performance');
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Client: ${this.selectedClients.join(', ') || 'All'}, State: ${this.selectedStates.join(', ') || 'All'}, Report: ${this.selectedReportTypes.join(', ') || 'All'}, Level: ${this.selectedLevels.join(', ') || 'All'}, Team Lead: ${this.selectedTeamLeads.join(', ') || 'All'}, Agent: ${this.selectedAgents.join(', ') || 'All'}`;
+
+      const filteredOrders = ordersAll.filter((o) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(o.month);
+        const matchClient = !this.selectedClients.length || this.selectedClients.includes(o.orderedByName);
+        const matchState = !this.selectedStates.length || this.selectedStates.includes(o.state);
+        const matchReport = !this.selectedReportTypes.length || this.selectedReportTypes.includes(o.reportType);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(o.teamLead);
+        const matchLevel = !this.selectedLevels.length || this.selectedLevels.includes(o.level);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(o.agent);
+        return matchMonth && matchClient && matchState && matchReport && matchLead && matchLevel && matchAgent;
+      });
+
+      const filteredPerf = perfAll.filter((p) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(p.month);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(p.teamLead);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(p.name);
+        return matchMonth && matchLead && matchAgent;
+      });
+
+      if (event.chartId === 'ordersByClient') {
+        const sliceOrders = filteredOrders.filter((o) => o.orderedByName === event.label);
+        this.showDataModal(`Orders for Client: ${event.label}`, sliceOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      } else if (event.chartId === 'ordersByReportType') {
+        const sliceOrders = filteredOrders.filter((o) => o.reportType === event.label);
+        this.showDataModal(`Orders for Report Type: ${event.label}`, sliceOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      } else if (event.chartId === 'volumeByLevel') {
+        const sliceOrders = filteredOrders.filter((o) => o.level === event.label);
+        this.showDataModal(`Orders for ${event.label}`, sliceOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      } else if (event.chartId === 'productivityByTeamLead') {
+        const slicePerf = filteredPerf.filter((p) => p.teamLead === event.label);
+        this.showDataModal(`Production Logs for Team Lead: ${event.label}`, slicePerf.map((p) => this.toCleanPerformanceRecord(p)), filterSubtitle);
+      } else if (event.chartId === 'topAgents') {
+        const sliceOrders = filteredOrders.filter((o) => o.agent?.toLowerCase() === event.label?.toLowerCase());
+        this.showDataModal(`Orders for Agent: ${event.label}`, sliceOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      } else if (event.chartId === 'ordersByState') {
+        const sliceOrders = filteredOrders.filter((o) => o.state === event.label);
+        this.showDataModal(`Orders in State: ${event.label}`, sliceOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      }
     }
   }
 
@@ -1645,17 +3088,52 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     const dep = this.data.department;
 
     if (dep === 'sw-engineering') {
+      const projectsAll = this.getTableRecords('projects');
+      const assignmentsAll = this.getTableRecords('assignments');
+      const employeeSummaryAll = this.getTableRecords('employeeSummary');
+      const defectsAll = this.getTableRecords('defects');
+
+      const filteredAssignments = assignmentsAll.filter((a) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(a.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(a.employee);
+        const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(a.role);
+        return matchProj && matchEmp && matchRole;
+      });
+
+      const activeProjectNamesFromAssignments = new Set(filteredAssignments.map((a) => a.project));
+
+      const filteredProjects = projectsAll.filter((p) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+        const matchEmpOrRole = (!this.selectedEmployees.length && !this.selectedRoles.length) || activeProjectNamesFromAssignments.has(p.project);
+        return matchProj && matchStat && matchEmpOrRole;
+      });
+
+      const activeEmployeesFromAssignments = new Set(filteredAssignments.map((a) => a.employee));
+      const filteredEmployeeSummary = employeeSummaryAll.filter((e) => {
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(e.employee);
+        const matchRole = !this.selectedRoles.length || this.selectedRoles.includes(e.role);
+        const matchProj = !this.selectedProjects.length || activeEmployeesFromAssignments.has(e.employee);
+        return matchEmp && matchRole && matchProj;
+      });
+
+      const filteredDefects = defectsAll.filter((d) => {
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(d.project);
+        const matchEmp = !this.selectedEmployees.length || this.selectedEmployees.includes(d.assignedTo);
+        return matchProj && matchEmp;
+      });
+
+      const filterSubtitle = `Filters Applied — Project: ${this.selectedProjects.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Resource: ${this.selectedEmployees.join(', ') || 'All'}, Role: ${this.selectedRoles.join(', ') || 'All'}`;
+
       if (chart.id === 'projectStatus') {
-        this.showDataModal(`All Projects`, this.getTableRecords('projects'));
+        this.showDataModal(`Projects (${filteredProjects.length})`, filteredProjects, filterSubtitle);
       } else if (chart.id === 'defectsBySeverity') {
-        const openDefects = this.getTableRecords('defects').filter((d) => d.status !== 'Closed');
-        if (openDefects.length > 0) {
-          this.showDataModal(`Open Defects`, openDefects);
-        }
+        const openDefects = filteredDefects.filter((d) => d.status !== 'Closed');
+        this.showDataModal(`Open Defects (${openDefects.length})`, openDefects, filterSubtitle);
       } else if (chart.id === 'slaBreakdown') {
-        this.showDataModal(`All Defects`, this.getTableRecords('defects'));
+        this.showDataModal(`Defects (${filteredDefects.length})`, filteredDefects, filterSubtitle);
       } else if (chart.id === 'hoursByEmployee') {
-        this.showDataModal(`Team Allocations`, this.getTableRecords('employeeSummary'));
+        this.showDataModal(`Employee Allocations (${filteredEmployeeSummary.length})`, filteredEmployeeSummary, filterSubtitle);
       }
     } else if (dep === 'marketing') {
       const leadsAll = this.getTableRecords('leads');
@@ -1690,24 +3168,67 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       if (chart.id === 'filesByMonth') this.showDataModal(chart.title, deliverables, filterSubtitle);
       else this.showDataModal(chart.title, utilization, filterSubtitle);
     } else if (dep === 'outbound-desk') {
-      this.showDataModal(chart.title, this.getTableRecords('calls'));
+      const callsAll = this.getTableRecords('calls');
+      const filteredCalls = callsAll.filter((c) => {
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(c.agent);
+        const matchOutcome = !this.selectedOutcomes.length || this.selectedOutcomes.includes(c.outcome);
+        const matchConnect = !this.selectedConnects.length || this.selectedConnects.includes(c.connect);
+        let dateFormatted = c.date;
+        if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+          const [y, m, d] = c.date.slice(0, 10).split('-');
+          dateFormatted = `${m}/${d}/${y}`;
+        }
+        const matchDate = !this.selectedDates.length || this.selectedDates.includes(dateFormatted) || this.selectedDates.includes(c.date);
+        return matchAgent && matchOutcome && matchConnect && matchDate;
+      });
+      const filterSubtitle = `Filters Applied — Agent: ${this.selectedAgents.join(', ') || 'All'}, Outcome: ${this.selectedOutcomes.join(', ') || 'All'}, Connected: ${this.selectedConnects.join(', ') || 'All'}, Date: ${this.selectedDates.join(', ') || 'All'}`;
+      this.showDataModal(chart.title, filteredCalls, filterSubtitle);
     } else if (dep === 'it-operations') {
+      const itKpiAll = this.getTableRecords('itKpi');
+      const resourcesAll = this.getTableRecords('resources');
+      const projectsAll = this.getTableRecords('projects');
+
+      const filteredItKpi = itKpiAll.filter((r) => {
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchCat && matchStat;
+      });
+
+      const filteredResources = resourcesAll.filter((r) => {
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
+        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
+        return matchRes && matchAlloc && matchProj && matchStat;
+      });
+
+      const filteredProjects = projectsAll.filter((p) => {
+        const matchOwner = !this.selectedResources.length || this.selectedResources.includes(p.owner);
+        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(p.status);
+        return matchOwner && matchProj && matchStat;
+      });
+
+      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
+
       if (chart.id === 'infraHealth') {
-        this.showDataModal('Infrastructure Availability & Health', this.getTableRecords('itKpi').filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
+        this.showDataModal('Infrastructure Availability & Health', filteredItKpi.filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
           kpi: r.kpi,
+          category: r.category,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (chart.id === 'secCompliance') {
-        this.showDataModal('Security & Backup Compliance', this.getTableRecords('itKpi').filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup')).map(r => ({
+        this.showDataModal('Security & Backup Compliance', filteredItKpi.filter(r => r.category.toLowerCase().includes('sec') || r.category.toLowerCase().includes('backup')).map(r => ({
           kpi: r.kpi,
+          category: r.category,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (chart.id === 'resourceUtil') {
-        this.showDataModal('IT Staff Resource Utilization', this.getTableRecords('resources').map(r => ({
+        this.showDataModal('IT Staff Resource Utilization', filteredResources.map(r => ({
           resource: r.resource,
           role: r.role,
           allocation: r.allocation,
@@ -1716,9 +3237,9 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           actualHours: r.actualHours,
           utilizationPct: r.utilizationPct,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else if (chart.id === 'projectProgress') {
-        this.showDataModal('Active IT Projects', this.getTableRecords('projects').map(p => ({
+        this.showDataModal('Active IT Projects', filteredProjects.map(p => ({
           project: p.project,
           owner: p.owner,
           startDate: p.startDate,
@@ -1727,43 +3248,87 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           actualCompletionPct: p.actualCompletionPct,
           scheduleVariancePct: p.scheduleVariancePct,
           status: p.status,
-        })));
+        })), filterSubtitle);
       } else if (chart.id === 'overallRAG') {
-        this.showDataModal('Overall IT Health Matrix', this.getTableRecords('itKpi').map(r => ({
+        this.showDataModal('Overall IT Health Matrix', filteredItKpi.map(r => ({
           category: r.category,
           kpi: r.kpi,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       } else {
-        this.showDataModal(chart.title, this.getTableRecords('itKpi').map(r => ({
+        this.showDataModal(chart.title, filteredItKpi.map(r => ({
           category: r.category,
           kpi: r.kpi,
           target: r.target,
           current: r.current,
           status: r.status,
-        })));
+        })), filterSubtitle);
       }
     } else if (dep === 'hr-query') {
       const queriesAll = this.getTableRecords('queries');
       const queries = queriesAll.filter((q) => {
         const matchYear = !q.year || !this.selectedYears.length || this.selectedYears.includes(String(q.year));
         const matchMonth = !q.month || !this.selectedMonths.length || this.selectedMonths.includes(q.month);
+        const matchCat = !q.category || !this.selectedCategories.length || this.selectedCategories.includes(q.category);
         const matchSubCat = !q.subCategory || !this.selectedSubCategories.length || this.selectedSubCategories.includes(q.subCategory);
         const matchPrio = !q.priority || !this.selectedPriorities.length || this.selectedPriorities.includes(q.priority);
         const matchHand = !q.assistancePerson || !this.selectedAssistancePersons.length || this.selectedAssistancePersons.includes(q.assistancePerson);
         const matchStat = !q.status || !this.selectedStatuses.length || this.selectedStatuses.includes(q.status);
-        return matchYear && matchMonth && matchSubCat && matchPrio && matchHand && matchStat;
+        return matchYear && matchMonth && matchCat && matchSubCat && matchPrio && matchHand && matchStat;
       });
-      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
+      const filterSubtitle = `Filters Applied — Year: ${this.selectedYears.join(', ') || 'All'}, Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Sub-Category: ${this.selectedSubCategories.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}, Handler: ${this.selectedAssistancePersons.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}`;
       this.showDataModal(chart.title, queries, filterSubtitle);
+    } else if (dep === 'residential-appraisal') {
+      const ordersAll = this.getTableRecords('orders');
+      const perfAll = this.getTableRecords('performance');
+
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Client: ${this.selectedClients.join(', ') || 'All'}, State: ${this.selectedStates.join(', ') || 'All'}, Report: ${this.selectedReportTypes.join(', ') || 'All'}, Level: ${this.selectedLevels.join(', ') || 'All'}, Team Lead: ${this.selectedTeamLeads.join(', ') || 'All'}, Agent: ${this.selectedAgents.join(', ') || 'All'}`;
+
+      const filteredOrders = ordersAll.filter((o) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(o.month);
+        const matchClient = !this.selectedClients.length || this.selectedClients.includes(o.orderedByName);
+        const matchState = !this.selectedStates.length || this.selectedStates.includes(o.state);
+        const matchReport = !this.selectedReportTypes.length || this.selectedReportTypes.includes(o.reportType);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(o.teamLead);
+        const matchLevel = !this.selectedLevels.length || this.selectedLevels.includes(o.level);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(o.agent);
+        return matchMonth && matchClient && matchState && matchReport && matchLead && matchLevel && matchAgent;
+      });
+
+      const filteredPerf = perfAll.filter((p) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(p.month);
+        const matchLead = !this.selectedTeamLeads.length || this.selectedTeamLeads.includes(p.teamLead);
+        const matchAgent = !this.selectedAgents.length || this.selectedAgents.includes(p.name);
+        return matchMonth && matchLead && matchAgent;
+      });
+
+      if (chart.id === 'productivityByTeamLead') {
+        this.showDataModal(chart.title, filteredPerf.map((p) => this.toCleanPerformanceRecord(p)), filterSubtitle);
+      } else if (chart.id === 'topAgents') {
+        this.showDataModal(chart.title, filteredOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      } else {
+        this.showDataModal(chart.title, filteredOrders.map((o) => this.toCleanOrderRecord(o)), filterSubtitle);
+      }
     }
   }
 
   onAgentClick(agent: string): void {
-    const calls = this.getTableRecords('calls');
-    this.showDataModal(`Call Log: ${agent}`, calls.filter((c) => c.agent === agent));
+    const callsAll = this.getTableRecords('calls');
+    const filteredCalls = callsAll.filter((c) => {
+      const matchOutcome = !this.selectedOutcomes.length || this.selectedOutcomes.includes(c.outcome);
+      const matchConnect = !this.selectedConnects.length || this.selectedConnects.includes(c.connect);
+      let dateFormatted = c.date;
+      if (typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c.date)) {
+        const [y, m, d] = c.date.slice(0, 10).split('-');
+        dateFormatted = `${m}/${d}/${y}`;
+      }
+      const matchDate = !this.selectedDates.length || this.selectedDates.includes(dateFormatted) || this.selectedDates.includes(c.date);
+      return c.agent === agent && matchOutcome && matchConnect && matchDate;
+    });
+    const filterSubtitle = `Filters Applied — Agent: ${agent}, Outcome: ${this.selectedOutcomes.join(', ') || 'All'}, Connected: ${this.selectedConnects.join(', ') || 'All'}, Date: ${this.selectedDates.join(', ') || 'All'}`;
+    this.showDataModal(`Call Log: ${agent}`, filteredCalls, filterSubtitle);
   }
 }
 

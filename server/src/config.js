@@ -37,6 +37,12 @@ const DEPARTMENTS = [
     fileName: 'HR Query Report.xlsm',
     cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQC4aZ2CFH53S6yeoVW7i4cSAbG5CYsdneFrot6Gxi17tfU?e=bE4CIs',
   },
+  {
+    id: 'residential-appraisal',
+    label: 'Residential Appraisal',
+    fileName: 'Sep MIS - 2026.xlsx',
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQCMJvEGsjTCRZQ-iuJ_YHeyAbJwYDDT-zC0G_9D2BLGPGo?e=epRXqW',
+  },
 ];
 
 module.exports = { PORT, DEPARTMENTS };

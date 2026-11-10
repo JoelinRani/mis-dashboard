@@ -21,8 +21,8 @@ function parseHrQuery(wb) {
     const queryCode = cleanStr(r['Query Code']);
     const empCode = cleanStr(r['Employee Code']);
     const employee = cleanStr(r['Employee']);
-    const category = cleanStr(r['Query Category ']) || cleanStr(r['Query Category']) || 'HR Support';
-    const subCategory = cleanStr(r['Query Sub Category ']) || cleanStr(r['Query Sub Category']) || 'General';
+    const category = cleanStr(r['Query Category ']) || cleanStr(r['Query Category']) || cleanStr(r['Category']) || 'HR Support';
+    const subCategory = cleanStr(r['Query Sub Category ']) || cleanStr(r['Query Sub Category']) || cleanStr(r['Sub Category']) || cleanStr(r['Query SubCategory']) || 'General';
     const subject = cleanStr(r['Query Subject']);
     const priority = cleanStr(r['Query Priority']) || 'Normal';
     const assistancePerson = cleanStr(r[' Assistance person']) || cleanStr(r['Assistance person']) || cleanStr(r['Assistance Person']) || 'Unassigned';
