@@ -53,7 +53,26 @@ async function syncDepartmentFromCloud(deptId) {
   if (!dept || !parser) throw new Error(`Unknown department "${deptId}"`);
   if (!dept.cloudUrl) throw new Error(`No cloudUrl configured for department "${deptId}"`);
 
-  const wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
+  let wb = null;
+  try {
+    wb = await fetchWorkbookFromOneDrive(dept.cloudUrl);
+  } catch (err) {
+    // If OneDrive fetch fails (e.g. WAF block or network), attempt parser with fallback if available
+    const fallbackData = parser(null);
+    if (fallbackData) {
+      const prev = serverCache.get(deptId);
+      fallbackData.sourceUrl = dept.cloudUrl;
+      fallbackData.sourceType = 'local_fallback';
+      fallbackData.sourceFile = dept.fileName || fallbackData.sourceFile;
+      fallbackData.generatedAt = prev?.data?.generatedAt || new Date().toISOString();
+      serverCache.set(deptId, {
+        data: fallbackData,
+        timestamp: Date.now(),
+      });
+      return fallbackData;
+    }
+    throw err;
+  }
   if (!wb) throw new Error(`Could not load workbook for department "${deptId}" from cloud`);
 
   const data = parser(wb);

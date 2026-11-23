@@ -29,7 +29,7 @@ const DEPARTMENTS = [
     id: 'it-operations',
     label: 'Weekly IT MIS & Operations',
     fileName: 'Weekly_IT_MIS_Report_V1.xlsx',
-    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQBFZ0Gcr1oqQL59L9uoQHEpAebC8cRUGye9-iY_Azqck4E?e=hIgQME',
+    cloudUrl: 'https://1drv.ms/x/c/CDF0FFEFCA0FD601/IQD6ntb4N7vORLLKb92ffBOBATK4vMZwzb59cd87n3607yQ?e=PpLKcX',
   },
   {
     id: 'hr-query',

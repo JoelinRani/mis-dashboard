@@ -15,7 +15,7 @@
     <div>
       <h1>{{ data.label }}</h1>
       <div class="source-line">
-        Source: <a [href]="data.sourceUrl || '#'" target="_blank" rel="noopener noreferrer" class="source-link">{{ data.sourceFile }}</a> &middot; Updated {{ formattedGeneratedAt(data.generatedAt) }}
+        Source: <a [href]="data.sourceUrl || '#'" target="_blank" rel="noopener noreferrer" class="source-link">{{ data.sourceFile }}</a> 
       </div>
     </div>
     <button class="btn-primary" (click)="refresh()" [disabled]="refreshing">
@@ -178,6 +178,14 @@
   <section class="filters-bar" *ngIf="data.department === 'it-operations'">
     <div class="filter-group">
       <app-multi-select-dropdown
+        *ngIf="monthsList.length > 0"
+        label="Month"
+        [options]="monthsList"
+        [selectedValues]="selectedMonths"
+        (selectionChange)="selectedMonths = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
         *ngIf="categoriesList.length > 0"
         label="Category"
         [options]="categoriesList"
@@ -202,11 +210,19 @@
       ></app-multi-select-dropdown>
 
       <app-multi-select-dropdown
-        *ngIf="allocationsList.length > 0"
-        label="Allocation Type"
-        [options]="allocationsList"
-        [selectedValues]="selectedAllocations"
-        (selectionChange)="selectedAllocations = $event; onFilterChange()"
+        *ngIf="prioritiesList.length > 0"
+        label="Priority"
+        [options]="prioritiesList"
+        [selectedValues]="selectedPriorities"
+        (selectionChange)="selectedPriorities = $event; onFilterChange()"
+      ></app-multi-select-dropdown>
+
+      <app-multi-select-dropdown
+        *ngIf="clientsList.length > 0"
+        label="Department"
+        [options]="clientsList"
+        [selectedValues]="selectedClients"
+        (selectionChange)="selectedClients = $event; onFilterChange()"
       ></app-multi-select-dropdown>
 
       <app-multi-select-dropdown

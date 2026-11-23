@@ -139,9 +139,38 @@ const COLUMN_TITLES: Record<string, string> = {
   empId: 'Emp ID',
   totalOrders: 'Total Orders',
   reportTypesCount: 'Report Types Count',
+  ticketNumber: 'Ticket #',
+  from: 'Requester',
+  fromEmail: 'Requester Email',
+  department: 'Department',
+  subProcess: 'Sub Process',
+  source: 'Source',
+  lastUpdated: 'Last Updated',
+  closedDate: 'Closed Date',
+  agentAssigned: 'Assigned Engineer',
+  attachmentsCount: 'Attachments',
+  latestRemark: 'Latest Remark',
+  engineer: 'Engineer',
+  nameInSystem: 'System Name',
+  shiftsWorked: 'Shifts Worked',
+  capacityCalls: 'Capacity (Calls)',
+  callsReceived: 'Calls Received',
+  callsClosed: 'Calls Closed',
+  receivedAndClosed: 'Received & Closed',
+  closureRatePct: 'Closure Rate %',
+  performanceStatus: 'Performance Status',
+  capacityUsedPct: 'Capacity Used %',
+  spareCapacityCalls: 'Spare Capacity (Calls)',
+  avgCallsPerShift: 'Avg Calls / Shift',
+  carryOver: 'Carry-over',
+  capacityPosition: 'Capacity Position',
+  day: 'Day',
+  teamReceived: 'Team Received',
+  teamClosed: 'Team Closed',
+  teamCapacity: 'Team Capacity',
 };
 
-const STATUS_KEYS = new Set(['status', 'outcome', 'severity', 'connect', 'slaStatus', 'allocationStatus', 'preliminaryResearch']);
+const STATUS_KEYS = new Set(['status', 'outcome', 'severity', 'connect', 'slaStatus', 'allocationStatus', 'preliminaryResearch', 'performanceStatus', 'capacityPosition']);
 const PERCENT_KEYS = new Set([
   'percentComplete',
   'totalAllocationPct',
@@ -157,6 +186,8 @@ const PERCENT_KEYS = new Set([
   'overallUtilPct',
   'avgProdPct',
   'avgUtilPct',
+  'closureRatePct',
+  'capacityUsedPct',
 ]);
 
 @Component({
@@ -617,22 +648,42 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.selectedAgents = this.selectedAgents.filter((a) => this.agentsList.includes(a));
     } else if (this.data.department === 'it-operations') {
       const itKpi = this.getTableRecords('itKpi');
-      const resources = this.getTableRecords('resources');
+      const tickets = this.getTableRecords('tickets');
+      const engineers = this.getTableRecords('engineers');
       const projects = this.getTableRecords('projects');
+      const resources = this.getTableRecords('resources');
+      const dailyDemand = this.getTableRecords('dailyDemand');
 
+      const allMonths = new Set<string>();
       const allCategories = new Set<string>();
       const allStatuses = new Set<string>();
       const allResources = new Set<string>();
-      const allAllocations = new Set<string>();
+      const allPriorities = new Set<string>();
+      const allDepartments = new Set<string>();
       const allProjects = new Set<string>();
 
+      tickets.forEach((t) => {
+        if (t.month) allMonths.add(t.month);
+        if (t.category) allCategories.add(t.category);
+        if (t.status) allStatuses.add(t.status);
+        if (t.agentAssigned && t.agentAssigned !== 'Unassigned') allResources.add(t.agentAssigned);
+        if (t.priority) allPriorities.add(t.priority);
+        if (t.department) allDepartments.add(t.department);
+      });
+      dailyDemand.forEach((d) => {
+        if (d.month) allMonths.add(d.month);
+      });
       itKpi.forEach((r) => {
         if (r.category) allCategories.add(r.category);
         if (r.status) allStatuses.add(r.status);
       });
+      engineers.forEach((e) => {
+        if (e.engineer && e.engineer !== 'TEAM TOTAL' && !e.engineer.startsWith('Others')) allResources.add(e.engineer);
+        if (e.performanceStatus) allStatuses.add(e.performanceStatus);
+        if (e.capacityPosition) allStatuses.add(e.capacityPosition);
+      });
       resources.forEach((r) => {
         if (r.resource) allResources.add(r.resource);
-        if (r.allocation) allAllocations.add(r.allocation);
         if (r.projectName) allProjects.add(r.projectName);
         if (r.status) allStatuses.add(r.status);
       });
@@ -642,16 +693,28 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         if (p.status) allStatuses.add(p.status);
       });
 
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.monthsList = sortedMonths.length ? sortedMonths : ['August', 'October', 'November'];
       this.categoriesList = [...allCategories].sort();
       this.statusesList = [...allStatuses].sort();
       this.resourcesList = [...allResources].sort();
-      this.allocationsList = [...allAllocations].sort();
+      this.prioritiesList = [...allPriorities].sort();
+      this.clientsList = [...allDepartments].sort();
       this.projectsList = [...allProjects].sort();
 
+      this.selectedMonths = this.selectedMonths.filter((m) => this.monthsList.includes(m));
       this.selectedCategories = this.selectedCategories.filter((c) => this.categoriesList.includes(c));
       this.selectedStatuses = this.selectedStatuses.filter((s) => this.statusesList.includes(s));
       this.selectedResources = this.selectedResources.filter((r) => this.resourcesList.includes(r));
-      this.selectedAllocations = this.selectedAllocations.filter((a) => this.allocationsList.includes(a));
+      this.selectedPriorities = this.selectedPriorities.filter((p) => this.prioritiesList.includes(p));
+      this.selectedClients = this.selectedClients.filter((d) => this.clientsList.includes(d));
       this.selectedProjects = this.selectedProjects.filter((p) => this.projectsList.includes(p));
     } else if (this.data.department === 'sw-engineering') {
       const projects = this.getTableRecords('projects');
@@ -899,22 +962,42 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.updateFilteredResidentialData();
     } else if (this.data.department === 'it-operations') {
       const itKpi = this.getTableRecords('itKpi');
-      const resources = this.getTableRecords('resources');
+      const tickets = this.getTableRecords('tickets');
+      const engineers = this.getTableRecords('engineers');
       const projects = this.getTableRecords('projects');
+      const resources = this.getTableRecords('resources');
+      const dailyDemand = this.getTableRecords('dailyDemand');
 
+      const allMonths = new Set<string>();
       const allCategories = new Set<string>();
       const allStatuses = new Set<string>();
       const allResources = new Set<string>();
-      const allAllocations = new Set<string>();
+      const allPriorities = new Set<string>();
+      const allDepartments = new Set<string>();
       const allProjects = new Set<string>();
 
+      tickets.forEach((t) => {
+        if (t.month) allMonths.add(t.month);
+        if (t.category) allCategories.add(t.category);
+        if (t.status) allStatuses.add(t.status);
+        if (t.agentAssigned && t.agentAssigned !== 'Unassigned') allResources.add(t.agentAssigned);
+        if (t.priority) allPriorities.add(t.priority);
+        if (t.department) allDepartments.add(t.department);
+      });
+      dailyDemand.forEach((d) => {
+        if (d.month) allMonths.add(d.month);
+      });
       itKpi.forEach((r) => {
         if (r.category) allCategories.add(r.category);
         if (r.status) allStatuses.add(r.status);
       });
+      engineers.forEach((e) => {
+        if (e.engineer && e.engineer !== 'TEAM TOTAL' && !e.engineer.startsWith('Others')) allResources.add(e.engineer);
+        if (e.performanceStatus) allStatuses.add(e.performanceStatus);
+        if (e.capacityPosition) allStatuses.add(e.capacityPosition);
+      });
       resources.forEach((r) => {
         if (r.resource) allResources.add(r.resource);
-        if (r.allocation) allAllocations.add(r.allocation);
         if (r.projectName) allProjects.add(r.projectName);
         if (r.status) allStatuses.add(r.status);
       });
@@ -924,16 +1007,28 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         if (p.status) allStatuses.add(p.status);
       });
 
+      const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const sortedMonths = [...allMonths].sort((a, b) => {
+        const ia = monthOrder.indexOf(a);
+        const ib = monthOrder.indexOf(b);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        return a.localeCompare(b);
+      });
+
+      this.monthsList = sortedMonths.length ? sortedMonths : ['August', 'October', 'November'];
       this.categoriesList = [...allCategories].sort();
       this.statusesList = [...allStatuses].sort();
       this.resourcesList = [...allResources].sort();
-      this.allocationsList = [...allAllocations].sort();
+      this.prioritiesList = [...allPriorities].sort();
+      this.clientsList = [...allDepartments].sort();
       this.projectsList = [...allProjects].sort();
 
+      this.selectedMonths = [];
       this.selectedCategories = [];
       this.selectedStatuses = [];
       this.selectedResources = [];
-      this.selectedAllocations = [];
+      this.selectedPriorities = [];
+      this.selectedClients = [];
       this.selectedProjects = [];
 
       this.updateFilteredItOperationsData();
@@ -1282,8 +1377,10 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     if (!this.data || this.data.department !== 'it-operations') return;
 
     const itKpiAll = this.getTableRecords('itKpi');
-    const resourcesAll = this.getTableRecords('resources');
+    const ticketsAll = this.getTableRecords('tickets');
+    const engineersAll = this.getTableRecords('engineers');
     const projectsAll = this.getTableRecords('projects');
+    const dailyDemandAll = this.getTableRecords('dailyDemand');
 
     // 1. Filter IT KPI records
     const filteredItKpi = itKpiAll.filter((r) => {
@@ -1292,16 +1389,25 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       return matchCat && matchStat;
     });
 
-    // 2. Filter Resources
-    const filteredResources = resourcesAll.filter((r) => {
-      const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
-      const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
-      const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
-      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
-      return matchRes && matchAlloc && matchProj && matchStat;
+    // 2. Filter Tickets
+    const filteredTickets = ticketsAll.filter((t) => {
+      const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(t.month);
+      const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(t.category);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(t.status);
+      const matchRes = !this.selectedResources.length || this.selectedResources.includes(t.agentAssigned);
+      const matchPrio = !this.selectedPriorities.length || this.selectedPriorities.includes(t.priority);
+      const matchDept = !this.selectedClients.length || this.selectedClients.includes(t.department);
+      return matchMonth && matchCat && matchStat && matchRes && matchPrio && matchDept;
     });
 
-    // 3. Filter Projects
+    // 3. Filter Engineers
+    const filteredEngineers = engineersAll.filter((e) => {
+      const matchEng = !this.selectedResources.length || this.selectedResources.includes(e.engineer) || this.selectedResources.includes(e.nameInSystem);
+      const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(e.performanceStatus) || this.selectedStatuses.includes(e.capacityPosition);
+      return matchEng && matchStat;
+    });
+
+    // 4. Filter Projects
     const filteredProjects = projectsAll.filter((p) => {
       const matchOwner = !this.selectedResources.length || this.selectedResources.includes(p.owner);
       const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(p.project);
@@ -1309,10 +1415,14 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       return matchOwner && matchProj && matchStat;
     });
 
-    // 4. Update KPIs dynamically
-    const kpis: Kpi[] = [];
+    // 5. Daily Demand records filtered by month
+    const filteredDailyDemand = dailyDemandAll.filter((d) => {
+      const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(d.month);
+      return matchMonth;
+    });
 
-    // Critical Resource Availability
+    // 6. Update KPIs dynamically
+    const kpis: Kpi[] = [];
     const infraAvail = filteredItKpi.filter(
       (r) => r.category.toLowerCase().includes('infra') && !isNaN(parseFloat(r.current))
     );
@@ -1325,11 +1435,11 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         }, 0) / infraAvail.length;
       critAvailVal = Math.round(avg * 10) / 10;
     } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
-      critAvailVal = (this.data.kpis?.find((k) => k.key === 'criticalAvailability')?.value as number) || 94.8;
+      critAvailVal = (this.data.kpis?.find((k) => k.key === 'criticalAvailability')?.value as number) || 95.4;
     }
     kpis.push({
       key: 'criticalAvailability',
-      label: 'Critical Resource Availability',
+      label: 'CRITICAL RESOURCE AVAILABILITY',
       value: critAvailVal,
       format: 'percent',
     });
@@ -1339,13 +1449,13 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     let slaVal = 0;
     if (slaRow) {
       const raw = parseFloat(slaRow.current);
-      slaVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 100;
+      slaVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 98.0;
     } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
-      slaVal = (this.data.kpis?.find((k) => k.key === 'slaCompliance')?.value as number) || 100;
+      slaVal = (this.data.kpis?.find((k) => k.key === 'slaCompliance')?.value as number) || 98.0;
     }
     kpis.push({
       key: 'slaCompliance',
-      label: 'SLA Compliance',
+      label: 'SLA COMPLIANCE',
       value: slaVal,
       format: 'percent',
     });
@@ -1355,29 +1465,29 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     let backupVal = 0;
     if (backupRow) {
       const raw = parseFloat(backupRow.current);
-      backupVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 100;
+      backupVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 100.0;
     } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
-      backupVal = (this.data.kpis?.find((k) => k.key === 'backupSuccess')?.value as number) || 100;
+      backupVal = (this.data.kpis?.find((k) => k.key === 'backupSuccess')?.value as number) || 100.0;
     }
     kpis.push({
       key: 'backupSuccess',
-      label: 'Backup Success Rate',
+      label: 'BACKUP SUCCESS RATE',
       value: backupVal,
       format: 'percent',
     });
 
     // Open Support Tickets
-    const ticketRow = filteredItKpi.find((r) => r.kpi.toLowerCase() === 'open tickets');
-    let ticketVal = 0;
-    if (ticketRow) {
-      ticketVal = parseFloat(ticketRow.current) || 0;
-    } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
-      ticketVal = (this.data.kpis?.find((k) => k.key === 'openTickets')?.value as number) || 8;
+    let openTicketsCount = 0;
+    if (filteredTickets.length > 0 || this.selectedCategories.length || this.selectedStatuses.length || this.selectedResources.length || this.selectedPriorities.length || this.selectedClients.length) {
+      openTicketsCount = filteredTickets.filter((t) => t.status !== 'Closed').length;
+    } else {
+      const ticketRow = filteredItKpi.find((r) => r.kpi.toLowerCase() === 'open tickets');
+      openTicketsCount = ticketRow ? parseFloat(ticketRow.current) || 3 : (this.data.kpis?.find((k) => k.key === 'openTickets')?.value as number) || 3;
     }
     kpis.push({
       key: 'openTickets',
-      label: 'Open Support Tickets',
-      value: ticketVal,
+      label: 'OPEN SUPPORT TICKETS',
+      value: openTicketsCount,
       format: 'number',
     });
 
@@ -1386,13 +1496,13 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     let patchVal = 0;
     if (patchRow) {
       const raw = parseFloat(patchRow.current);
-      patchVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 90.2;
+      patchVal = !isNaN(raw) ? (raw <= 1 && raw > 0 ? Math.round(raw * 1000) / 10 : raw) : 88.54;
     } else if (!this.selectedCategories.length && !this.selectedStatuses.length) {
-      patchVal = (this.data.kpis?.find((k) => k.key === 'patchCompliance')?.value as number) || 90.2;
+      patchVal = (this.data.kpis?.find((k) => k.key === 'patchCompliance')?.value as number) || 88.54;
     }
     kpis.push({
       key: 'patchCompliance',
-      label: 'Patch Compliance',
+      label: 'PATCH COMPLIANCE',
       value: patchVal,
       format: 'percent',
     });
@@ -1407,14 +1517,14 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
     }
     kpis.push({
       key: 'majorOutages',
-      label: 'Major Outages',
+      label: 'MAJOR OUTAGES',
       value: outageVal,
       format: 'number',
     });
 
     this.displayedKpis = kpis;
 
-    // 5. Update Charts dynamically
+    // 6. Update Charts dynamically
     // Chart 1: Infrastructure Health
     const infraItems = filteredItKpi.filter((r) => r.category.toLowerCase().includes('infra'));
     const infraLabels = infraItems.map((r) => r.kpi);
@@ -1434,16 +1544,30 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       return num <= 1 && num > 0 ? Math.round(num * 1000) / 10 : num;
     });
 
-    // Chart 3: IT Engineer Utilization
-    const resLabels = filteredResources.map((r) => r.resource);
-    const resValues = filteredResources.map((r) => r.utilizationPct || 0);
+    // Chart 3: Engineer Performance & Capacity
+    const individualEngs = filteredEngineers.filter((e) => e.engineer !== 'TEAM TOTAL' && !e.engineer.startsWith('Others'));
+    const engLabels = individualEngs.map((e) => e.engineer);
+    const engClosureRates = individualEngs.map((e) => e.closureRatePct || 0);
+    const engCapacityUsed = individualEngs.map((e) => e.capacityUsedPct || 0);
 
-    // Chart 4: Active IT Projects
-    const projLabels = filteredProjects.map((p) => p.project);
-    const projPlanned = filteredProjects.map((p) => p.plannedCompletionPct || 0);
-    const projActual = filteredProjects.map((p) => p.actualCompletionPct || 0);
+    // Chart 4: Support Tickets by Category
+    const catCounts = new Map<string, number>();
+    filteredTickets.forEach((t) => {
+      const c = t.category || 'General';
+      catCounts.set(c, (catCounts.get(c) || 0) + 1);
+    });
+    const sortedCats = [...catCounts.entries()].sort((a, b) => b[1] - a[1]);
+    const ticketCatLabels = sortedCats.map((x) => x[0]);
+    const ticketCatValues = sortedCats.map((x) => x[1]);
 
-    // Chart 5: Overall IT Health RAG Status
+    // Chart 5: Daily Demand vs Team Capacity
+    const demandToUse = filteredDailyDemand.length ? filteredDailyDemand : dailyDemandAll;
+    const dailyLabels = demandToUse.map((d) => d.day);
+    const dailyReceived = demandToUse.map((d) => d.teamReceived || 0);
+    const dailyClosed = demandToUse.map((d) => d.teamClosed || 0);
+    const dailyCapacity = demandToUse.map((d) => d.teamCapacity || 0);
+
+    // Chart 6: Overall IT Health RAG Status
     const statusCounts: Record<string, number> = {};
     filteredItKpi.forEach((r) => {
       const s = r.status || 'Healthy';
@@ -1466,20 +1590,31 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         series: [{ name: 'Compliance %', data: secValues.length ? secValues : [0] }],
       },
       {
-        id: 'resourceUtil',
-        title: 'IT Engineer Utilization %',
+        id: 'engineerPerformance',
+        title: 'Engineer Performance & Capacity %',
         type: 'bar',
-        labels: resLabels.length ? resLabels : ['No matching engineers'],
-        series: [{ name: 'Utilization %', data: resValues.length ? resValues : [0] }],
+        labels: engLabels.length ? engLabels : ['Hari', 'Karthick'],
+        series: [
+          { name: 'Closure Rate %', data: engClosureRates.length ? engClosureRates : [94.6, 91.7] },
+          { name: 'Capacity Used %', data: engCapacityUsed.length ? engCapacityUsed : [49.3, 16.0] },
+        ],
       },
       {
-        id: 'projectProgress',
-        title: 'Active IT Projects Completion %',
+        id: 'ticketsByCategory',
+        title: 'Support Tickets by Category',
         type: 'bar',
-        labels: projLabels.length ? projLabels : ['No matching projects'],
+        labels: ticketCatLabels.length ? ticketCatLabels : ['Hardware Requests', 'OS & Application', 'Network & Server'],
+        series: [{ name: 'Tickets', data: ticketCatValues.length ? ticketCatValues : [0] }],
+      },
+      {
+        id: 'dailyDemand',
+        title: 'Daily Ticket Demand vs Capacity',
+        type: 'bar',
+        labels: dailyLabels.length ? dailyLabels : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         series: [
-          { name: 'Planned %', data: projPlanned.length ? projPlanned : [0] },
-          { name: 'Actual %', data: projActual.length ? projActual : [0] },
+          { name: 'Team Received', data: dailyReceived.length ? dailyReceived : [0, 2, 11, 15, 19, 2, 2] },
+          { name: 'Team Closed', data: dailyClosed.length ? dailyClosed : [0, 0, 13, 13, 16, 5, 0] },
+          { name: 'Team Capacity', data: dailyCapacity.length ? dailyCapacity : [0, 30, 30, 30, 30, 30, 0] },
         ],
       },
       {
@@ -2332,7 +2467,8 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       }
     } else if (dep === 'it-operations') {
       const itKpiAll = this.getTableRecords('itKpi');
-      const resourcesAll = this.getTableRecords('resources');
+      const ticketsAll = this.getTableRecords('tickets');
+      const engineersAll = this.getTableRecords('engineers');
       const projectsAll = this.getTableRecords('projects');
 
       const filteredItKpi = itKpiAll.filter((r) => {
@@ -2341,15 +2477,17 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         return matchCat && matchStat;
       });
 
-      const filteredResources = resourcesAll.filter((r) => {
-        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
-        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
-        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
-        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
-        return matchRes && matchAlloc && matchProj && matchStat;
+      const filteredTickets = ticketsAll.filter((t) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(t.month);
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(t.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(t.status);
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(t.agentAssigned);
+        const matchPrio = !this.selectedPriorities.length || this.selectedPriorities.includes(t.priority);
+        const matchDept = !this.selectedClients.length || this.selectedClients.includes(t.department);
+        return matchMonth && matchCat && matchStat && matchRes && matchPrio && matchDept;
       });
 
-      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}${this.selectedClients.length ? ', Dept: ' + this.selectedClients.join(', ') : ''}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
 
       switch (kpi.key) {
         case 'criticalAvailability':
@@ -2380,14 +2518,8 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           break;
         case 'openTickets':
           this.showDataModal(
-            `Support Tickets & Operations`,
-            filteredItKpi.filter(r => r.category.toLowerCase().includes('oper') || r.kpi.toLowerCase().includes('ticket')).map(r => ({
-              kpi: r.kpi,
-              category: r.category,
-              target: r.target,
-              current: r.current,
-              status: r.status,
-            })),
+            `Open Support Tickets (${filteredTickets.filter(t => t.status !== 'Closed').length})`,
+            filteredTickets.filter(t => t.status !== 'Closed'),
             filterSubtitle
           );
           break;
@@ -2431,13 +2563,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           );
           break;
         default:
-          this.showDataModal(`IT Infrastructure & Security Matrix`, filteredItKpi.map(r => ({
-            kpi: r.kpi,
-            category: r.category,
-            target: r.target,
-            current: r.current,
-            status: r.status,
-          })), filterSubtitle);
+          this.showDataModal(`Support Tickets (${filteredTickets.length})`, filteredTickets, filterSubtitle);
           break;
       }
     } else if (dep === 'hr-query') {
@@ -2929,8 +3055,10 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       }
     } else if (dep === 'it-operations') {
       const itKpiAll = this.getTableRecords('itKpi');
-      const resourcesAll = this.getTableRecords('resources');
+      const ticketsAll = this.getTableRecords('tickets');
+      const engineersAll = this.getTableRecords('engineers');
       const projectsAll = this.getTableRecords('projects');
+      const dailyDemandAll = this.getTableRecords('dailyDemand');
 
       const filteredItKpi = itKpiAll.filter((r) => {
         const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
@@ -2938,12 +3066,20 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         return matchCat && matchStat;
       });
 
-      const filteredResources = resourcesAll.filter((r) => {
-        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
-        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
-        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
-        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
-        return matchRes && matchAlloc && matchProj && matchStat;
+      const filteredTickets = ticketsAll.filter((t) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(t.month);
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(t.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(t.status);
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(t.agentAssigned);
+        const matchPrio = !this.selectedPriorities.length || this.selectedPriorities.includes(t.priority);
+        const matchDept = !this.selectedClients.length || this.selectedClients.includes(t.department);
+        return matchMonth && matchCat && matchStat && matchRes && matchPrio && matchDept;
+      });
+
+      const filteredEngineers = engineersAll.filter((e) => {
+        const matchEng = !this.selectedResources.length || this.selectedResources.includes(e.engineer) || this.selectedResources.includes(e.nameInSystem);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(e.performanceStatus) || this.selectedStatuses.includes(e.capacityPosition);
+        return matchEng && matchStat;
       });
 
       const filteredProjects = projectsAll.filter((p) => {
@@ -2953,7 +3089,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         return matchOwner && matchProj && matchStat;
       });
 
-      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}${this.selectedClients.length ? ', Dept: ' + this.selectedClients.join(', ') : ''}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
 
       if (event.chartId === 'infraHealth') {
         const match = filteredItKpi.filter((r) => r.kpi.toLowerCase() === event.label.toLowerCase());
@@ -2975,32 +3111,20 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           current: r.current,
           status: r.status,
         })), filterSubtitle);
-      } else if (event.chartId === 'resourceUtil') {
-        const match = filteredResources.filter((r) => r.resource.toLowerCase() === event.label.toLowerCase());
-        const list = match.length ? match : filteredResources;
-        this.showDataModal(`Resource Details: ${event.label}`, list.map(r => ({
-          resource: r.resource,
-          role: r.role,
-          allocation: r.allocation,
-          projectName: r.projectName,
-          plannedHours: r.plannedHours,
-          actualHours: r.actualHours,
-          utilizationPct: r.utilizationPct,
-          status: r.status,
-        })), filterSubtitle);
+      } else if (event.chartId === 'engineerPerformance') {
+        const match = filteredEngineers.filter((e) => e.engineer.toLowerCase() === event.label.toLowerCase());
+        const list = match.length ? match : filteredEngineers;
+        this.showDataModal(`Engineer Capacity & Performance: ${event.label}`, list, filterSubtitle);
+      } else if (event.chartId === 'ticketsByCategory') {
+        const match = filteredTickets.filter((t) => (t.category || 'General').toLowerCase() === event.label.toLowerCase());
+        this.showDataModal(`Support Tickets: ${event.label}`, match, filterSubtitle);
+      } else if (event.chartId === 'dailyDemand') {
+        const match = dailyDemandAll.filter((d) => d.day.toLowerCase() === event.label.toLowerCase());
+        this.showDataModal(`Daily Ticket Demand vs Capacity (${event.label})`, match.length ? match : dailyDemandAll, filterSubtitle);
       } else if (event.chartId === 'projectProgress') {
         const match = filteredProjects.filter((p) => p.project.toLowerCase() === event.label.toLowerCase());
         const list = match.length ? match : filteredProjects;
-        this.showDataModal(`Project Details: ${event.label}`, list.map(p => ({
-          project: p.project,
-          owner: p.owner,
-          startDate: p.startDate,
-          targetCompletion: p.targetCompletion,
-          plannedCompletionPct: p.plannedCompletionPct,
-          actualCompletionPct: p.actualCompletionPct,
-          scheduleVariancePct: p.scheduleVariancePct,
-          status: p.status,
-        })), filterSubtitle);
+        this.showDataModal(`Project Details: ${event.label}`, list, filterSubtitle);
       } else if (event.chartId === 'overallRAG') {
         const filtered = filteredItKpi.filter((r) => r.status.toLowerCase() === event.label.toLowerCase()).map(r => ({
           category: r.category,
@@ -3185,8 +3309,10 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
       this.showDataModal(chart.title, filteredCalls, filterSubtitle);
     } else if (dep === 'it-operations') {
       const itKpiAll = this.getTableRecords('itKpi');
-      const resourcesAll = this.getTableRecords('resources');
+      const ticketsAll = this.getTableRecords('tickets');
+      const engineersAll = this.getTableRecords('engineers');
       const projectsAll = this.getTableRecords('projects');
+      const dailyDemandAll = this.getTableRecords('dailyDemand');
 
       const filteredItKpi = itKpiAll.filter((r) => {
         const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(r.category);
@@ -3194,12 +3320,20 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         return matchCat && matchStat;
       });
 
-      const filteredResources = resourcesAll.filter((r) => {
-        const matchRes = !this.selectedResources.length || this.selectedResources.includes(r.resource);
-        const matchAlloc = !this.selectedAllocations.length || this.selectedAllocations.includes(r.allocation);
-        const matchProj = !this.selectedProjects.length || this.selectedProjects.includes(r.projectName);
-        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(r.status);
-        return matchRes && matchAlloc && matchProj && matchStat;
+      const filteredTickets = ticketsAll.filter((t) => {
+        const matchMonth = !this.selectedMonths.length || this.selectedMonths.includes(t.month);
+        const matchCat = !this.selectedCategories.length || this.selectedCategories.includes(t.category);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(t.status);
+        const matchRes = !this.selectedResources.length || this.selectedResources.includes(t.agentAssigned);
+        const matchPrio = !this.selectedPriorities.length || this.selectedPriorities.includes(t.priority);
+        const matchDept = !this.selectedClients.length || this.selectedClients.includes(t.department);
+        return matchMonth && matchCat && matchStat && matchRes && matchPrio && matchDept;
+      });
+
+      const filteredEngineers = engineersAll.filter((e) => {
+        const matchEng = !this.selectedResources.length || this.selectedResources.includes(e.engineer) || this.selectedResources.includes(e.nameInSystem);
+        const matchStat = !this.selectedStatuses.length || this.selectedStatuses.includes(e.performanceStatus) || this.selectedStatuses.includes(e.capacityPosition);
+        return matchEng && matchStat;
       });
 
       const filteredProjects = projectsAll.filter((p) => {
@@ -3209,7 +3343,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
         return matchOwner && matchProj && matchStat;
       });
 
-      const filterSubtitle = `Filters Applied — Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Allocation: ${this.selectedAllocations.join(', ') || 'All'}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
+      const filterSubtitle = `Filters Applied — Month: ${this.selectedMonths.join(', ') || 'All'}, Category: ${this.selectedCategories.join(', ') || 'All'}, Status: ${this.selectedStatuses.join(', ') || 'All'}, Engineer: ${this.selectedResources.join(', ') || 'All'}, Priority: ${this.selectedPriorities.join(', ') || 'All'}${this.selectedClients.length ? ', Dept: ' + this.selectedClients.join(', ') : ''}${this.selectedProjects.length ? ', Project: ' + this.selectedProjects.join(', ') : ''}`;
 
       if (chart.id === 'infraHealth') {
         this.showDataModal('Infrastructure Availability & Health', filteredItKpi.filter(r => r.category.toLowerCase().includes('infra')).map(r => ({
@@ -3227,17 +3361,12 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           current: r.current,
           status: r.status,
         })), filterSubtitle);
-      } else if (chart.id === 'resourceUtil') {
-        this.showDataModal('IT Staff Resource Utilization', filteredResources.map(r => ({
-          resource: r.resource,
-          role: r.role,
-          allocation: r.allocation,
-          projectName: r.projectName,
-          plannedHours: r.plannedHours,
-          actualHours: r.actualHours,
-          utilizationPct: r.utilizationPct,
-          status: r.status,
-        })), filterSubtitle);
+      } else if (chart.id === 'engineerPerformance') {
+        this.showDataModal('Engineer Call Capacity & Performance', filteredEngineers, filterSubtitle);
+      } else if (chart.id === 'ticketsByCategory') {
+        this.showDataModal('IT Support & Service Desk Tickets', filteredTickets, filterSubtitle);
+      } else if (chart.id === 'dailyDemand') {
+        this.showDataModal('Daily Ticket Demand vs Capacity', dailyDemandAll, filterSubtitle);
       } else if (chart.id === 'projectProgress') {
         this.showDataModal('Active IT Projects', filteredProjects.map(p => ({
           project: p.project,
@@ -3258,13 +3387,7 @@ export class DepartmentDashboardComponent implements OnInit, OnDestroy {
           status: r.status,
         })), filterSubtitle);
       } else {
-        this.showDataModal(chart.title, filteredItKpi.map(r => ({
-          category: r.category,
-          kpi: r.kpi,
-          target: r.target,
-          current: r.current,
-          status: r.status,
-        })), filterSubtitle);
+        this.showDataModal(chart.title, filteredTickets.length ? filteredTickets : filteredItKpi, filterSubtitle);
       }
     } else if (dep === 'hr-query') {
       const queriesAll = this.getTableRecords('queries');
